@@ -22,9 +22,8 @@
 import json
 import uuid
 import tasklib.task as tlib
-import sys
 import os.path
-import subprocess
+
 
 uda_config_list = [
     {'uda.Legion.type': 'string'},
@@ -139,12 +138,12 @@ class EnhancedTaskWarrior(object):
 class TaskLegion(object):
     """ A project that is shared with others. """
 
-    def __init__(self, ID='', ldata='/', rdata='/'):
+    def __init__(self, lid='', ldata='/', rdata='/'):
         self._local_data = None
         self._remote_data = None
         self.tw_local = None
         self.tw_remote = None
-        self.ID = ID
+        self.ID = lid
         self.local_data = ldata
         self.remote_data = rdata
 
@@ -395,58 +394,4 @@ class TaskGeneral(object):
                 return lgn
 
 
-def execute_command(command_args):
-    p = subprocess.Popen(command_args,
-                         stdin=subprocess.PIPE,
-                         stdout=subprocess.PIPE,
-                         stderr=subprocess.PIPE)
-    p.communicate(input='y\n')
 
-
-if len(sys.argv) > 1:
-    command = sys.argv[1]
-    configfile = os.path.expanduser("~") + "\\.legionrc"
-    TG = TaskGeneral(configfile)
-    if command == 'install':
-        for uda in uda_config_list:
-            execute_command(['task', 'config', uda.keys()[0], uda[uda.keys()[0]]])
-        print "TaskLegion installed."
-    elif command == 'uninstall':
-        for uda in reversed(uda_config_list):
-            execute_command(['task', 'config', uda.keys()[0]])
-        os.remove(configfile)
-        print "TaskLegion uninstalled."
-    elif command == 'create':
-        print "Creating new Legion..."
-        ID = raw_input('Enter an ID: ')
-        ldata = raw_input('Enter local data.location: ')
-        rdata = raw_input('Enter remote data.location: ')
-        TP = TaskLegion(ID, ldata, rdata)
-        TG.create_legion(TP)
-        TG.save()
-    elif command == 'list':
-        if TG.legions:
-            print "The following legions are available:\n"
-            for legion in TG.legions:
-                print "Legion: " + legion.ID
-                print "local: " + legion.local_data
-                print "remote: " + legion.remote_data
-    elif command in ['add', 'remove', 'delete', 'sync']:
-        if len(sys.argv) > 2:
-            supplied_pattern = sys.argv[3:]
-            project = TG.find(sys.argv[2])
-            if project:
-                if command == 'add':
-                    project.add(supplied_pattern)
-                elif command == 'remove':
-                    project.remove(supplied_pattern)
-                elif command == 'delete':
-                    TG.delete_legion(project)
-                elif command == 'sync':
-                    project.sync()
-            else:
-                print "Legion " + sys.argv[2] + " not found."
-        else:
-            print "You must supply a LegionID."
-else:
-    print "No command supplied."
