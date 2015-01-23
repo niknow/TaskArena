@@ -187,7 +187,7 @@ class TaskLegion(object):
         print "Tasks added."
 
     def remove(self, pattern):
-        for ta_task in self.tw_local.tasks(pattern + 'Legion:' + self.ID):
+        for ta_task in self.tw_local.tasks([pattern, 'Legion:' + self.ID]):
             ta_task.remove()
             ta_task.save()
         print "Tasks removed from " + self.ID + " ."
