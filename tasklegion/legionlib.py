@@ -287,7 +287,7 @@ class TaskLegion(object):
                         print "Sync canceled.\n"
                         synclist = []
                         break
-            #carry out sync
+            # carry out sync
             for elem in synclist:
                 if elem.action == 'UPLOAD':
                     if elem.remote_task:
@@ -392,6 +392,3 @@ class TaskGeneral(object):
         for lgn in self.legions:
             if lgn.ID == lid:
                 return lgn
-
-
-
