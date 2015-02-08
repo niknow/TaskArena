@@ -138,7 +138,7 @@ class EnhancedTaskWarrior(object):
 class TaskLegion(object):
     """ A project that is shared with others. """
 
-    def __init__(self, lid='', ldata='/', rdata='/'):
+    def __init__(self, lid='', ldata='/', rdata='/', iomanager=None):
         self._local_data = None
         self._remote_data = None
         self.tw_local = None
@@ -146,6 +146,7 @@ class TaskLegion(object):
         self.ID = lid
         self.local_data = ldata
         self.remote_data = rdata
+        self.IOManager = iomanager
 
     def get_local_data(self):
         return self._local_data
@@ -184,44 +185,44 @@ class TaskLegion(object):
     def add(self, pattern):
         for ta_task in self.tw_local.tasks(pattern):
             ta_task.save()
-        print "Tasks added."
+        self.IOManager.send_message("Tasks added.")
 
     def remove(self, pattern):
         for ta_task in self.tw_local.tasks([pattern, 'Legion:' + self.ID]):
             ta_task.remove()
             ta_task.save()
-        print "Tasks removed from " + self.ID + " ."
+        self.IOManager.send_message("Tasks removed from " + self.ID + " .")
 
     def sync(self):
 
         def sync_choice(e):
             if e.local_task:
-                print "Task Description: " + e.local_task.tw_task['description']
-                print "LegionID        : " + e.local_task.LegionID
+                self.IOManager.send_message("Task Description: " + e.local_task.tw_task['description'])
+                self.IOManager.send_message("LegionID        : " + e.local_task.LegionID)
                 if e.remote_task:
-                    print "\nTask exists in both repositories.\n"
-                    print "Last modified (local) : " + e.local_last_modified
-                    print "Last modified (remote): " + e.remote_last_modified
+                    self.IOManager.send_message("\nTask exists in both repositories.\n")
+                    self.IOManager.send_message("Last modified (local) : " + e.local_last_modified)
+                    self.IOManager.send_message("Last modified (remote): " + e.remote_last_modified)
 
-                    print "\nSuggesting to " + e.suggestion + ".\n"
-                    print "This would cause the following modifications: \n"
+                    self.IOManager.send_message("\nSuggesting to " + e.suggestion + ".\n")
+                    self.IOManager.send_message("This would cause the following modifications: \n")
                     for field in e.fields:
                         local_field = str(e.local_task.tw_task[field]) if e.local_task.tw_task[field] else '(empty)'
                         remote_field = str(e.remote_task.tw_task[field]) if e.remote_task.tw_task[field] else '(empty)'
-                        print field + ": " + local_field + (
-                            " -> " if e.suggestion == 'UPLOAD' else ' <- ') + remote_field
+                        self.IOManager.send_message(field + ": " + local_field + (
+                            " -> " if e.suggestion == 'UPLOAD' else ' <- ') + remote_field)
 
                     result = raw_input("\nDo you want to (u)pload, (d)ownload, (s)kip or (c)ancel sync? (u/d/s/c) ")
                 else:
-                    print "\n"
-                    print "This task does not yet exist on remote. Suggestion: " + e.suggestion
+                    self.IOManager.send_message("\n")
+                    self.IOManager.send_message("This task does not yet exist on remote. Suggestion: " + e.suggestion)
                     result = raw_input("\nDo you want to (u)pload, (s)kip or (c)ancel sync? (u/s/c) ")
             else:
-                print "-" * seplength
-                print "Description: " + e.remote_task.tw_task['description']
-                print "LegionID: " + e.remote_task.LegionID
-                print "\n"
-                print "This task does not yet exist on local."
+                self.IOManager.send_message("-" * seplength)
+                self.IOManager.send_message("Description: " + e.remote_task.tw_task['description'])
+                self.IOManager.send_message("LegionID: " + e.remote_task.LegionID)
+                self.IOManager.send_message("\n")
+                self.IOManager.send_message("This task does not yet exist on local.")
                 result = raw_input("\nDo you want to (d)ownload, (s)kip or (c)ancel sync? (d/s/c) ")
             return result
 
@@ -229,13 +230,13 @@ class TaskLegion(object):
             print "{0:6}   {1:25}   {2:20}   {3:10}\n".format(t[0][0:6], t[1][0:25], t[2][0:20], t[3][0:10])
 
         def sync_preview(slist):
-            print "-" * seplength
+            self.IOManager.send_message("-" * seplength)
             formatted_print(('', 'Task', 'LastModified', 'Suggestion'))
             print "-" * seplength
             for e in slist:
                 formatted_print(('Local', e.local_description, e.local_last_modified, ''))
                 formatted_print(('Remote', e.remote_description, e.remote_last_modified, e.suggestion))
-                print "-" * seplength
+                self.IOManager.send_message("-" * seplength)
 
             return raw_input("\nDo you want to sync (a)ll, sync (m)anually or (c)ancel? (a/m/c) ")
 
@@ -267,24 +268,24 @@ class TaskLegion(object):
             synclist.append(download)
         # present synclist and allow modifications
         if synclist:
-            print "\nSuggesting the following sync operations on " + self.ID + "...\n\n"
+            self.IOManager.send_message("\nSuggesting the following sync operations on " + self.ID + "...\n\n")
             sync_command = sync_preview(synclist)
             if sync_command == 'a':
                 for elem in synclist:
                     elem.action = elem.suggestion
             elif sync_command == 'm':
-                print "\nStarting manual sync...\n"
+                self.IOManager.send_message("\nStarting manual sync...\n")
                 for elem in synclist:
-                    print "-" * seplength
+                    self.IOManager.send_message("-" * seplength)
                     sc = sync_choice(elem)
                     if sc == 'u':
                         elem.action = 'UPLOAD'
-                        print "\nTask uploaded."
+                        self.IOManager.send_message("\nTask uploaded.")
                     elif sc == 'd':
                         elem.action = 'DOWNLOAD'
-                        print "\nTask downloaded."
+                        self.IOManager.send_message("\nTask downloaded.")
                     elif sc == 'c':
-                        print "Sync canceled.\n"
+                        self.IOManager.send_message("Sync canceled.\n")
                         synclist = []
                         break
             # carry out sync
@@ -301,9 +302,9 @@ class TaskLegion(object):
                         elem.local_task.save()
                     else:
                         self.tw_local.add_task(elem.remote_task)
-            print "\nSync complete.\n"
+            self.IOManager.send_message("\nSync complete.\n")
         else:
-            print "Legion " + self.ID + " is in sync.\n"
+            self.IOManager.send_message("Legion " + self.ID + " is in sync.\n")
 
 
 class SyncElement():
@@ -331,11 +332,22 @@ class SyncElement():
         return str(self.remote_task.last_modified()) if self.remote_task else ''
 
 
+class IOManager(object):
+
+    def __init__(self, show_output=True):
+        self.show_output = show_output
+
+    def send_message(self, msg):
+        if self.show_output:
+            print msg
+
+
 class TaskGeneral(object):
     """ A class to handle all your TaskLegions """
 
-    def __init__(self, cfile):
+    def __init__(self, cfile, output=True):
         self.legions = []
+        self.IOManager = IOManager(output)
         self.configfile = cfile
         self.load(cfile)
 
@@ -344,17 +356,17 @@ class TaskGeneral(object):
             f = open(cfile)
             try:
                 self.json = json.load(f)
-                # print "Legions loaded."
+                self.IOManager.send_message("Legions loaded.")
             except:
-                print "Warning: Config file " + cfile + " is empty or corrupt."
+                self.IOManager.send_message("Warning: Config file " + cfile + " is empty or corrupt.")
         else:
             open(cfile, 'w+')
-            print "New .legionrc created at " + cfile
+            self.IOManager.send_message("New .legionrc created at " + cfile)
 
     def save(self):
         f = open(self.configfile, 'w+')
         json.dump(self.json, f)
-        print "Task General saved."
+        self.IOManager.send_message("Task General saved.")
 
     def get_json(self):
         return {'legions': [p.json for p in self.legions]}
@@ -364,6 +376,7 @@ class TaskGeneral(object):
         for json_project in data['legions']:
             lgn = TaskLegion()
             lgn.json = json_project
+            lgn.IOManager = self.IOManager
             self.legions.append(lgn)
 
     json = property(get_json, set_json)
@@ -375,18 +388,20 @@ class TaskGeneral(object):
     def __str__(self):
         return str(self.__repr__())
 
-    def create_legion(self, lgn):
-        if lgn.ID in [p.ID for p in self.legions]:
-            print "Legion " + lgn.ID + " already exists!"
+    def create_legion(self, lid, ldata, rdata):
+        if id in [p.ID for p in self.legions]:
+            self.IOManager.send_message("Legion " + id + " already exists!")
         else:
+            lgn = TaskLegion(lid, ldata, rdata, self.IOManager)
             self.legions.append(lgn)
-            print "Legion " + lgn.ID + " created."
+            self.IOManager.send_message("Legion " + lgn.ID + " created.")
+        return lgn
 
     def delete_legion(self, lgn):
         lgn.remove('')
         self.legions.remove(lgn)
         self.save()
-        print "Legion " + lgn.ID + " deleted."
+        self.IOManager.send_message("Legion " + lgn.ID + " deleted.")
 
     def find(self, lid):
         for lgn in self.legions:

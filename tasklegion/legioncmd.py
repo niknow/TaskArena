@@ -55,8 +55,7 @@ if args.command:
         ID = raw_input('Enter an ID: ')
         ldata = raw_input('Enter local data.location: ')
         rdata = raw_input('Enter remote data.location: ')
-        TP = TaskLegion(ID, ldata, rdata)
-        TG.create_legion(TP)
+        TG.create_legion(ID, ldata, rdata)
         TG.save()
     elif args.command == 'list':
         if TG.legions:

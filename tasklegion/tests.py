@@ -24,14 +24,13 @@ class TaskLegionTest(unittest.TestCase):
         #pass
 
     def setUp(self):
-        self.TG = TaskGeneral(TaskLegionTest.ConfigFile[1])
+        self.TG = TaskGeneral(TaskLegionTest.ConfigFile[1], False)
         self.lid = "BuildHouse"
 
     def test_1_create_legion(self):
-        TP = TaskLegion(self.lid, TaskLegionTest.LocalDir, TaskLegionTest.RemoteDir)
-        self.TG.create_legion(TP)
+        tp = self.TG.create_legion(self.lid, TaskLegionTest.LocalDir, TaskLegionTest.RemoteDir)
         self.TG.save()
-        self.assertEqual(self.TG.find(self.lid), TP)
+        self.assertEqual(self.TG.find(self.lid), tp)
 
     def test_2_create_and_add_task(self):
         legion = self.TG.find(self.lid)
