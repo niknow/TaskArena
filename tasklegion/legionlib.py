@@ -32,7 +32,13 @@ uda_config_list = [
     {'uda.LegionID.label': 'LegionID'},
 ]
 
-seplength = 75
+
+class SyncAction():
+    upload = 'UPLOAD'
+    sownload = 'DOWNLOAD'
+
+    def __init__(self):
+        pass
 
 
 class SharedTask(object):
@@ -147,6 +153,7 @@ class TaskLegion(object):
         self.local_data = ldata
         self.remote_data = rdata
         self.IOManager = iomanager
+        self.SyncManager = SyncManager(self)
 
     def get_local_data(self):
         return self._local_data
@@ -194,55 +201,19 @@ class TaskLegion(object):
         self.IOManager.send_message("Tasks removed from " + self.ID + " .")
 
     def sync(self):
+        synclist = self.SyncManager.generate_synclist()
+        synclist = self.SyncManager.let_user_check_and_modify_synclist(synclist)
+        self.SyncManager.carry_out_sync(synclist)
 
-        def sync_choice(e):
-            if e.local_task:
-                self.IOManager.send_message("Task Description: " + e.local_task.tw_task['description'])
-                self.IOManager.send_message("LegionID        : " + e.local_task.LegionID)
-                if e.remote_task:
-                    self.IOManager.send_message("\nTask exists in both repositories.\n")
-                    self.IOManager.send_message("Last modified (local) : " + e.local_last_modified)
-                    self.IOManager.send_message("Last modified (remote): " + e.remote_last_modified)
 
-                    self.IOManager.send_message("\nSuggesting to " + e.suggestion + ".\n")
-                    self.IOManager.send_message("This would cause the following modifications: \n")
-                    for field in e.fields:
-                        local_field = str(e.local_task.tw_task[field]) if e.local_task.tw_task[field] else '(empty)'
-                        remote_field = str(e.remote_task.tw_task[field]) if e.remote_task.tw_task[field] else '(empty)'
-                        self.IOManager.send_message(field + ": " + local_field + (
-                            " -> " if e.suggestion == 'UPLOAD' else ' <- ') + remote_field)
+class SyncManager(object):
 
-                    result = raw_input("\nDo you want to (u)pload, (d)ownload, (s)kip or (c)ancel sync? (u/d/s/c) ")
-                else:
-                    self.IOManager.send_message("\n")
-                    self.IOManager.send_message("This task does not yet exist on remote. Suggestion: " + e.suggestion)
-                    result = raw_input("\nDo you want to (u)pload, (s)kip or (c)ancel sync? (u/s/c) ")
-            else:
-                self.IOManager.send_message("-" * seplength)
-                self.IOManager.send_message("Description: " + e.remote_task.tw_task['description'])
-                self.IOManager.send_message("LegionID: " + e.remote_task.LegionID)
-                self.IOManager.send_message("\n")
-                self.IOManager.send_message("This task does not yet exist on local.")
-                result = raw_input("\nDo you want to (d)ownload, (s)kip or (c)ancel sync? (d/s/c) ")
-            return result
+    def __init__(self, legion):
+        self.legion = legion
 
-        def formatted_print(t):
-            print "{0:6}   {1:25}   {2:20}   {3:10}\n".format(t[0][0:6], t[1][0:25], t[2][0:20], t[3][0:10])
-
-        def sync_preview(slist):
-            self.IOManager.send_message("-" * seplength)
-            formatted_print(('', 'Task', 'LastModified', 'Suggestion'))
-            print "-" * seplength
-            for e in slist:
-                formatted_print(('Local', e.local_description, e.local_last_modified, ''))
-                formatted_print(('Remote', e.remote_description, e.remote_last_modified, e.suggestion))
-                self.IOManager.send_message("-" * seplength)
-
-            return raw_input("\nDo you want to sync (a)ll, sync (m)anually or (c)ancel? (a/m/c) ")
-
-        # get sync data
-        local_tasks = self.tw_local.tasks('')
-        remote_tasks = self.tw_remote.tasks('')
+    def generate_synclist(self):
+        local_tasks = self.legion.tw_local.tasks('')
+        remote_tasks = self.legion.tw_remote.tasks('')
         new_local_tasks = [task for task in local_tasks if not task in remote_tasks]
         new_remote_tasks = [task for task in remote_tasks if not task in local_tasks]
         synclist = []
@@ -266,48 +237,52 @@ class TaskLegion(object):
         for task in new_remote_tasks:
             download = SyncElement(None, task, None, 'DOWNLOAD')
             synclist.append(download)
-        # present synclist and allow modifications
+        return synclist
+
+    def let_user_check_and_modify_synclist(self, synclist):
         if synclist:
-            self.IOManager.send_message("\nSuggesting the following sync operations on " + self.ID + "...\n\n")
-            sync_command = sync_preview(synclist)
+            self.legion.IOManager.send_message("\nSuggesting the following sync operations on " + self.legion.ID + "...\n\n")
+            sync_command = self.legion.IOManager.sync_preview(synclist)
             if sync_command == 'a':
                 for elem in synclist:
                     elem.action = elem.suggestion
             elif sync_command == 'm':
-                self.IOManager.send_message("\nStarting manual sync...\n")
+                self.legion.IOManager.send_message("\nStarting manual sync...\n")
                 for elem in synclist:
-                    self.IOManager.send_message("-" * seplength)
-                    sc = sync_choice(elem)
+                    self.legion.IOManager.print_separator()
+                    sc = self.legion.IOManager.sync_choice(elem)
                     if sc == 'u':
                         elem.action = 'UPLOAD'
-                        self.IOManager.send_message("\nTask uploaded.")
+                        self.legion.IOManager.send_message("\nTask uploaded.")
                     elif sc == 'd':
                         elem.action = 'DOWNLOAD'
-                        self.IOManager.send_message("\nTask downloaded.")
+                        self.legion.IOManager.send_message("\nTask downloaded.")
                     elif sc == 'c':
-                        self.IOManager.send_message("Sync canceled.\n")
+                        self.legion.IOManager.send_message("Sync canceled.\n")
                         synclist = []
                         break
-            # carry out sync
-            for elem in synclist:
-                if elem.action == 'UPLOAD':
-                    if elem.remote_task:
-                        elem.remote_task.update(elem.local_task)
-                        elem.remote_task.save()
-                    else:
-                        self.tw_remote.add_task(elem.local_task)
-                elif elem.action == 'DOWNLOAD':
-                    if elem.local_task:
-                        elem.local_task.update(elem.remote_task)
-                        elem.local_task.save()
-                    else:
-                        self.tw_local.add_task(elem.remote_task)
-            self.IOManager.send_message("\nSync complete.\n")
         else:
-            self.IOManager.send_message("Legion " + self.ID + " is in sync.\n")
+            self.legion.IOManager.send_message("Legion " + self.legion.ID + " is in sync.\n")
+        return synclist
+
+    def carry_out_sync(self, synclist):
+        for elem in synclist:
+            if elem.action == 'UPLOAD':
+                if elem.remote_task:
+                    elem.remote_task.update(elem.local_task)
+                    elem.remote_task.save()
+                else:
+                    self.legion.tw_remote.add_task(elem.local_task)
+            elif elem.action == 'DOWNLOAD':
+                if elem.local_task:
+                    elem.local_task.update(elem.remote_task)
+                    elem.local_task.save()
+                else:
+                    self.legion.tw_local.add_task(elem.remote_task)
+        self.legion.IOManager.send_message("\nSync complete.\n")
 
 
-class SyncElement():
+class SyncElement(object):
     def __init__(self, ltask=None, rtask=None, fields=None, suggestion='', action=''):
         self.local_task = ltask
         self.remote_task = rtask
@@ -334,12 +309,61 @@ class SyncElement():
 
 class IOManager(object):
 
-    def __init__(self, show_output=True):
+    def __init__(self, show_output=True, seplength = 75):
         self.show_output = show_output
+        self.seplength = seplength
 
     def send_message(self, msg):
         if self.show_output:
             print msg
+
+    def print_separator(self):
+        self.send_message("-" * self.seplength)
+
+    def sync_preview(self, synclist):
+        self.print_separator()
+        self.formatted_print(('', 'Task', 'LastModified', 'Suggestion'))
+        self.print_separator()
+        for e in synclist:
+            self.formatted_print(('Local', e.local_description, e.local_last_modified, ''))
+            self.formatted_print(('Remote', e.remote_description, e.remote_last_modified, e.suggestion))
+            self.print_separator()
+
+        return raw_input("\nDo you want to sync (a)ll, sync (m)anually or (c)ancel? (a/m/c) ")
+
+    def formatted_print(self, t):
+        print "{0:6}   {1:25}   {2:20}   {3:10}\n".format(t[0][0:6], t[1][0:25], t[2][0:20], t[3][0:10])
+
+    def sync_choice(self, e):
+        if e.local_task:
+            self.send_message("Task Description: " + e.local_task.tw_task['description'])
+            self.send_message("LegionID        : " + e.local_task.LegionID)
+            if e.remote_task:
+                self.send_message("\nTask exists in both repositories.\n")
+                self.send_message("Last modified (local) : " + e.local_last_modified)
+                self.send_message("Last modified (remote): " + e.remote_last_modified)
+
+                self.send_message("\nSuggesting to " + e.suggestion + ".\n")
+                self.send_message("This would cause the following modifications: \n")
+                for field in e.fields:
+                    local_field = str(e.local_task.tw_task[field]) if e.local_task.tw_task[field] else '(empty)'
+                    remote_field = str(e.remote_task.tw_task[field]) if e.remote_task.tw_task[field] else '(empty)'
+                    self.send_message(field + ": " + local_field + (
+                        " -> " if e.suggestion == 'UPLOAD' else ' <- ') + remote_field)
+
+                result = raw_input("\nDo you want to (u)pload, (d)ownload, (s)kip or (c)ancel sync? (u/d/s/c) ")
+            else:
+                self.send_message("\n")
+                self.send_message("This task does not yet exist on remote. Suggestion: " + e.suggestion)
+                result = raw_input("\nDo you want to (u)pload, (s)kip or (c)ancel sync? (u/s/c) ")
+        else:
+            self.print_separator()
+            self.send_message("Description: " + e.remote_task.tw_task['description'])
+            self.send_message("LegionID: " + e.remote_task.LegionID)
+            self.send_message("\n")
+            self.send_message("This task does not yet exist on local.")
+            result = raw_input("\nDo you want to (d)ownload, (s)kip or (c)ancel sync? (d/s/c) ")
+        return result
 
 
 class TaskGeneral(object):

@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+
 import tempfile
 import unittest
 import shutil
@@ -9,56 +10,91 @@ from tasklib.task import Task
 
 class TaskLegionTest(unittest.TestCase):
 
+    #called before every test
     def setUp(self):
         self.LocalDir = tempfile.mkdtemp(dir='.')
         self.RemoteDir = tempfile.mkdtemp(dir='.')
-        self.ConfigFile = tempfile.mkstemp(dir='.')
-        self.TG = TaskGeneral(self.ConfigFile[1], False)
-        self.lid = "BuildHouse"
+        self.ConfigFileLocal = tempfile.mkstemp(dir='.')
+        self.ConfigFileRemote = tempfile.mkstemp(dir='.')
+        self.TG_local = TaskGeneral(self.ConfigFileLocal[1], False)
+        self.TG_remote = TaskGeneral(self.ConfigFileRemote[1], False)
+        self.lid = "RefurbishHouse"
 
+    #called after every test
     def tearDown(self):
         shutil.rmtree(self.LocalDir)
         shutil.rmtree(self.RemoteDir)
-        os.close(self.ConfigFile[0])
-        os.remove(self.ConfigFile[1])
+        os.close(self.ConfigFileLocal[0])
+        os.remove(self.ConfigFileLocal[1])
+        os.close(self.ConfigFileRemote[0])
+        os.remove(self.ConfigFileRemote[1])
+    #helper functions
+
+    def create_local_legion(self):
+        legion = self.TG_local.create_legion(self.lid, self.LocalDir, self.RemoteDir)
+        self.TG_local.save()
+        return legion
+
+    def create_remote_legion(self):
+        legion = self.TG_local.create_legion(self.lid, self.RemoteDir, self.LocalDir)
+        self.TG_remote.save()
+        return legion
+
+    def create_task(self, warrior, description):
+        task = Task(warrior)
+        task['description'] = description
+        task.save()
+        return task
+
+    #unittests
 
     def test_create_legion(self):
-        tp = self.TG.create_legion(self.lid, self.LocalDir, self.RemoteDir)
-        self.TG.save()
-        self.assertEqual(self.TG.find(self.lid), tp)
+        legion = self.create_local_legion()
+        self.assertEqual(self.TG_local.find(self.lid), legion)
 
     def test_delete_legion(self):
-        self.TG.create_legion(self.lid, self.LocalDir, self.RemoteDir)
-        self.TG.save()
-        legion = self.TG.find(self.lid)
-        self.TG.delete_legion(legion)
-        self.assertEqual(self.TG.find(self.lid), None)
+        legion = self.create_local_legion()
+        self.TG_local.delete_legion(legion)
+        self.assertEqual(self.TG_local.find(self.lid), None)
 
-    def test_create_and_add_task(self):
-        self.TG.create_legion(self.lid, self.LocalDir, self.RemoteDir)
-        self.TG.save()
-        legion = self.TG.find(self.lid)
-        task = Task(legion.tw_local.tw)
+    def test_find_legion(self):
+        legion = self.TG_local.find(self.lid)
+        found = self.TG_local.find(self.lid)
+        self.assertEqual(legion, found)
+
+    def test_create_add_local_task(self):
+        legion = self.create_local_legion()
         task_description = 'paint walls'
-        task['description'] = task_description
-        task.save()
+        self.create_task(legion.tw_local.tw, task_description)
         legion.add(task_description)
         loaded_task = legion.tw_local.tasks(['Legion:'+self.lid, task_description])[0]
         self.assertEqual(task_description, loaded_task.tw_task['description'])
 
-    def test_remove_task(self):
-        self.TG.create_legion(self.lid, self.LocalDir, self.RemoteDir)
-        self.TG.save()
-        legion = self.TG.find(self.lid)
-        task = Task(legion.tw_local.tw)
+    def test_remove_local_task(self):
+        legion = self.create_local_legion()
         task_description = 'paint walls'
-        task['description'] = task_description
-        task.save()
+        self.create_task(legion.tw_local.tw, task_description)
         legion.add(task_description)
         legion.remove(task_description)
         loaded_task = legion.tw_local.tasks(['Legion:'+self.lid, task_description])
         self.assertEqual(loaded_task, [])
 
+    def test_create_add_remote_task(self):
+        remote_legion = self.create_remote_legion()
+        task_description = "paint ceiling"
+        self.create_task(remote_legion.tw_local.tw, task_description)
+        remote_legion.add(task_description)
+        loaded_task = remote_legion.tw_local.tasks(['Legion:'+self.lid, task_description])[0]
+        self.assertEqual(task_description, loaded_task.tw_task['description'])
+
+    def test_remove_remote_task(self):
+        remote_legion = self.create_remote_legion()
+        task_description = 'paint ceiling'
+        self.create_task(remote_legion.tw_local.tw, task_description)
+        remote_legion.add(task_description)
+        remote_legion.remove(task_description)
+        loaded_task = remote_legion.tw_local.tasks(['Legion:'+self.lid, task_description])
+        self.assertEqual(loaded_task, [])
 
 
 
