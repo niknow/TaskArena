@@ -201,54 +201,49 @@ class TaskLegion(object):
         self.IOManager.send_message("Tasks removed from " + self.ID + " .")
 
     def sync(self):
-        synclist = self.SyncManager.generate_synclist()
-        synclist = self.SyncManager.let_user_check_and_modify_synclist(synclist)
-        self.SyncManager.carry_out_sync(synclist)
+        self.SyncManager.generate_synclist()
+        self.SyncManager.suggest_conflict_resolution()
+        self.SyncManager.let_user_check_and_modify_synclist()
+        self.SyncManager.carry_out_sync()
 
 
 class SyncManager(object):
 
     def __init__(self, legion):
         self.legion = legion
+        self.synclist = []
 
     def generate_synclist(self):
         local_tasks = self.legion.tw_local.tasks('')
         remote_tasks = self.legion.tw_remote.tasks('')
-        new_local_tasks = [task for task in local_tasks if not task in remote_tasks]
-        new_remote_tasks = [task for task in remote_tasks if not task in local_tasks]
-        synclist = []
-        # find sync conflicts and add to synclist
         for ltask in local_tasks:
-            if ltask in remote_tasks:
-                for rtask in remote_tasks:
-                    if ltask == rtask:
-                        if ltask.different_fields(rtask):
-                            conflict = SyncElement(ltask, rtask, ltask.different_fields(rtask))
-                            if ltask.last_modified() >= rtask.last_modified():
-                                conflict.suggestion = 'UPLOAD'
-                            else:
-                                conflict.suggestion = 'DOWNLOAD'
-                            synclist.append(conflict)
-        # add new local tasks to synclist
-        for task in new_local_tasks:
-            upload = SyncElement(task, None, None, 'UPLOAD')
-            synclist.append(upload)
-        # add new remote tasks to synclist
-        for task in new_remote_tasks:
-            download = SyncElement(None, task, None, 'DOWNLOAD')
-            synclist.append(download)
-        return synclist
+            rtask = next((t for t in remote_tasks if t == ltask), None)
+            if rtask:
+                self.synclist.append(SyncElement(ltask, rtask, ltask.different_fields(rtask), 'CONFLICT'))
+            else:
+                self.synclist.append(SyncElement(ltask, None, None, 'UPLOAD'))
+        for rtask in remote_tasks:
+            if rtask not in local_tasks:
+                self.synclist.append(SyncElement(None, rtask, None, 'DOWNLOAD'))
 
-    def let_user_check_and_modify_synclist(self, synclist):
-        if synclist:
+    def suggest_conflict_resolution(self):
+        for e in self.synclist:
+            if e.suggestion == 'CONFLICT':
+                if e.ltask.last_modified() >= e.rtask.last_modified():
+                    e.suggestion = 'UPLOAD'
+                else:
+                    e.suggestion = 'DOWNLOAD'
+
+    def let_user_check_and_modify_synclist(self):
+        if self.synclist:
             self.legion.IOManager.send_message("Suggesting the following sync operations on " + self.legion.ID + "...", 1, 2)
-            sync_command = self.legion.IOManager.sync_preview(synclist)
+            sync_command = self.legion.IOManager.sync_preview(self.synclist)
             if sync_command == 'a':
-                for elem in synclist:
+                for elem in self.synclist:
                     elem.action = elem.suggestion
             elif sync_command == 'm':
                 self.legion.IOManager.send_message("Starting manual sync...", 1, 1)
-                for elem in synclist:
+                for elem in self.synclist:
                     self.legion.IOManager.print_separator()
                     sc = self.legion.IOManager.sync_choice(elem)
                     if sc == 'u':
@@ -263,7 +258,6 @@ class SyncManager(object):
                         break
         else:
             self.legion.IOManager.send_message("Legion " + self.legion.ID + " is in sync.", 0, 1)
-        return synclist
 
     def carry_out_sync(self, synclist):
         for elem in synclist:

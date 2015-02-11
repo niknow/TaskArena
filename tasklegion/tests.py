@@ -127,9 +127,9 @@ class TaskLegionTest(unittest.TestCase):
         task_description = 'paint ceiling'
         self.create_task(remote_legion.tw_local.tw, task_description)
         remote_legion.add(task_description)
-        synclist = legion.SyncManager.generate_synclist()
-        num_uploads = len([e for e in synclist if e.suggestion == 'UPLOAD'])
-        num_downloads = len([e for e in synclist if e.suggestion == 'DOWNLOAD'])
+        legion.SyncManager.generate_synclist()
+        num_uploads = len([e for e in legion.SyncManager.synclist if e.suggestion == 'UPLOAD'])
+        num_downloads = len([e for e in legion.SyncManager.synclist if e.suggestion == 'DOWNLOAD'])
         self.assertEqual([num_uploads, num_downloads], [2, 1])
 
 
