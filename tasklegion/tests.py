@@ -65,7 +65,7 @@ class TaskLegionTest(unittest.TestCase):
         task.save()
         return task
 
-    #unittests
+    #tests
 
     def test_create_legion(self):
         legion = self.create_local_legion()
