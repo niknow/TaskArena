@@ -28,6 +28,7 @@ class TaskLegionTest(unittest.TestCase):
         os.remove(self.ConfigFileLocal[1])
         os.close(self.ConfigFileRemote[0])
         os.remove(self.ConfigFileRemote[1])
+
     #helper functions
 
     def create_local_legion(self):
@@ -96,8 +97,22 @@ class TaskLegionTest(unittest.TestCase):
         loaded_task = remote_legion.tw_local.tasks(['Legion:'+self.lid, task_description])
         self.assertEqual(loaded_task, [])
 
-
-
+    def test_create_synclist(self):
+        legion = self.create_local_legion()
+        task_description = 'paint walls'
+        self.create_task(legion.tw_local.tw, task_description)
+        legion.add(task_description)
+        task_description = 'clean floor'
+        self.create_task(legion.tw_local.tw, task_description)
+        legion.add(task_description)
+        remote_legion = self.create_remote_legion()
+        task_description = 'paint ceiling'
+        self.create_task(remote_legion.tw_local.tw, task_description)
+        remote_legion.add(task_description)
+        synclist = legion.SyncManager.generate_synclist()
+        num_uploads = len([e for e in synclist if e.suggestion == 'UPLOAD'])
+        num_downloads = len([e for e in synclist if e.suggestion == 'DOWNLOAD'])
+        self.assertEqual([num_uploads, num_downloads], [2, 1])
 
 
 #if __name__ == '__main__':
