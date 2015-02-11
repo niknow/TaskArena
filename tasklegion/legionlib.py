@@ -309,7 +309,7 @@ class SyncElement(object):
 
 class IOManager(object):
 
-    def __init__(self, show_output=True, seplength = 75):
+    def __init__(self, show_output=True, seplength=75):
         self.show_output = show_output
         self.seplength = seplength
 
