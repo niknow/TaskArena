@@ -127,10 +127,22 @@ class TaskLegionTest(unittest.TestCase):
         task_description = 'paint ceiling'
         self.create_task(remote_legion.tw_local.tw, task_description)
         remote_legion.add(task_description)
+        task_description = 'clean floor'
+        self.create_task(remote_legion.tw_local.tw, task_description)
+        remote_legion.add(task_description)
+        ltask = legion.tw_local.tasks('clean floor')[0]
+        rtask = remote_legion.tw_local.tasks('clean floor')[0]
+        ltask.LegionID = 1
+        rtask.LegionID = 1
+        ltask.save()
+        rtask.save()
         legion.SyncManager.generate_synclist()
         num_uploads = len([e for e in legion.SyncManager.synclist if e.suggestion == 'UPLOAD'])
         num_downloads = len([e for e in legion.SyncManager.synclist if e.suggestion == 'DOWNLOAD'])
-        self.assertEqual([num_uploads, num_downloads], [2, 1])
+        num_conflicts = len([e for e in legion.SyncManager.synclist if e.suggestion == 'CONFLICT'])
+        self.assertEqual(num_uploads, 1)
+        self.assertEqual(num_downloads, 1)
+        self.assertEqual(num_conflicts, 1)
 
 
 #if __name__ == '__main__':
