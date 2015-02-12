@@ -229,7 +229,7 @@ class SyncManager(object):
     def suggest_conflict_resolution(self):
         for e in self.synclist:
             if e.suggestion == 'CONFLICT':
-                if e.ltask.last_modified() >= e.rtask.last_modified():
+                if e.local_task.last_modified() >= e.remote_task.last_modified():
                     e.suggestion = 'UPLOAD'
                 else:
                     e.suggestion = 'DOWNLOAD'
