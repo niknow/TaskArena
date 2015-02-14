@@ -259,8 +259,8 @@ class SyncManager(object):
         else:
             self.legion.IOManager.send_message("Legion " + self.legion.ID + " is in sync.", 0, 1)
 
-    def carry_out_sync(self, synclist):
-        for elem in synclist:
+    def carry_out_sync(self):
+        for elem in self.synclist:
             if elem.action == 'UPLOAD':
                 if elem.remote_task:
                     elem.remote_task.update(elem.local_task)

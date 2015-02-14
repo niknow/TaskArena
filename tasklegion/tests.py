@@ -19,7 +19,6 @@
 
 
 import tempfile
-from time import sleep
 import unittest
 import shutil
 import os
@@ -28,8 +27,7 @@ from tasklib.task import Task
 
 
 class TaskLegionTest(unittest.TestCase):
-
-    #--- test setup and rear down ---
+    # --- test setup and rear down ---
     def setUp(self):
         self.LocalDir = tempfile.mkdtemp(dir='.')
         self.RemoteDir = tempfile.mkdtemp(dir='.')
@@ -47,7 +45,7 @@ class TaskLegionTest(unittest.TestCase):
         os.close(self.ConfigFileRemote[0])
         os.remove(self.ConfigFileRemote[1])
 
-    #--- helper functions ---
+    # --- helper functions ---
 
     def create_local_legion(self):
         legion = self.TG_local.create_legion(self.lid, self.LocalDir, self.RemoteDir)
@@ -65,21 +63,9 @@ class TaskLegionTest(unittest.TestCase):
         task.save()
         return task
 
-    def create_synclist(self, legion):
-        ltask1 = SharedTask(self.create_task(legion.tw_local.tw, 'paint walls'), legion)
-        ltask2 = SharedTask(self.create_task(legion.tw_local.tw, 'clean floor'), legion)
-        rtask1 = SharedTask(self.create_task(legion.tw_remote.tw, 'paint ceiling'), legion)
-        rtask2 = SharedTask(self.create_task(legion.tw_remote.tw, 'clean floor'), legion)
-        synclist = []
-        synclist.append(SyncElement(ltask1, None, None, 'UPLOAD'))
-        synclist.append(SyncElement(ltask2, rtask2, ltask2.different_fields(rtask2), 'CONFLICT'))
-        synclist.append(SyncElement(None, rtask1, None, 'DOWNLOAD'))
-        return synclist
+    # --- tests ---
 
-
-    #--- tests ---
-
-    #class TaskGeneral
+    # class TaskGeneral
     def test_create_legion(self):
         legion = self.create_local_legion()
         self.assertEqual(self.TG_local.find(self.lid), legion)
@@ -94,13 +80,13 @@ class TaskLegionTest(unittest.TestCase):
         found = self.TG_local.find(self.lid)
         self.assertEqual(legion, found)
 
-    #class TaskLegion
+    # class TaskLegion
     def test_create_add_local_task(self):
         legion = self.create_local_legion()
         task_description = 'paint walls'
         self.create_task(legion.tw_local.tw, task_description)
         legion.add(task_description)
-        loaded_task = legion.tw_local.tasks(['Legion:'+self.lid, task_description])[0]
+        loaded_task = legion.tw_local.tasks(['Legion:' + self.lid, task_description])[0]
         self.assertEqual(task_description, loaded_task.tw_task['description'])
 
     def test_remove_local_task(self):
@@ -109,7 +95,7 @@ class TaskLegionTest(unittest.TestCase):
         self.create_task(legion.tw_local.tw, task_description)
         legion.add(task_description)
         legion.remove(task_description)
-        loaded_task = legion.tw_local.tasks(['Legion:'+self.lid, task_description])
+        loaded_task = legion.tw_local.tasks(['Legion:' + self.lid, task_description])
         self.assertEqual(loaded_task, [])
 
     def test_create_add_remote_task(self):
@@ -117,7 +103,7 @@ class TaskLegionTest(unittest.TestCase):
         task_description = "paint ceiling"
         self.create_task(remote_legion.tw_local.tw, task_description)
         remote_legion.add(task_description)
-        loaded_task = remote_legion.tw_local.tasks(['Legion:'+self.lid, task_description])[0]
+        loaded_task = remote_legion.tw_local.tasks(['Legion:' + self.lid, task_description])[0]
         self.assertEqual(task_description, loaded_task.tw_task['description'])
 
     def test_remove_remote_task(self):
@@ -126,10 +112,10 @@ class TaskLegionTest(unittest.TestCase):
         self.create_task(remote_legion.tw_local.tw, task_description)
         remote_legion.add(task_description)
         remote_legion.remove(task_description)
-        loaded_task = remote_legion.tw_local.tasks(['Legion:'+self.lid, task_description])
+        loaded_task = remote_legion.tw_local.tasks(['Legion:' + self.lid, task_description])
         self.assertEqual(loaded_task, [])
 
-    #class SyncManager
+    # class SyncManager
     def test_create_synclist(self):
         legion = self.create_local_legion()
         task_description = 'paint walls'
@@ -161,8 +147,14 @@ class TaskLegionTest(unittest.TestCase):
 
     def test_suggest_conflict_resolution(self):
         legion = self.create_local_legion()
-        synclist = self.create_synclist(legion)
         syncmanager = SyncManager(legion)
+        ltask1 = SharedTask(self.create_task(legion.tw_local.tw, 'paint walls'), legion)
+        ltask2 = SharedTask(self.create_task(legion.tw_local.tw, 'clean floor'), legion)
+        rtask1 = SharedTask(self.create_task(legion.tw_remote.tw, 'paint ceiling'), legion)
+        rtask2 = SharedTask(self.create_task(legion.tw_remote.tw, 'clean floor'), legion)
+        synclist = [SyncElement(ltask1, None, None, 'UPLOAD', 'UPLOAD'),
+                    SyncElement(ltask2, rtask2, ltask2.different_fields(rtask2), 'CONFLICT', 'UPLOAD'),
+                    SyncElement(None, rtask1, None, 'DOWNLOAD', 'DOWNLOAD'), ]
         syncmanager.synclist = synclist
         syncmanager.suggest_conflict_resolution()
         num_uploads = len([x for x in syncmanager.synclist if x.suggestion == 'UPLOAD'])
@@ -172,9 +164,30 @@ class TaskLegionTest(unittest.TestCase):
         self.assertEqual(num_downloads, 1)
         self.assertEqual(num_conflicts, 0)
 
+    def test_carry_out_sync(self):
+        legion = self.create_local_legion()
+        syncmanager = SyncManager(legion)
+        ltask1 = SharedTask(self.create_task(legion.tw_local.tw, 'paint walls'), legion)
+        ltask2 = SharedTask(self.create_task(legion.tw_local.tw, 'clean floor'), legion)
+        rtask1 = SharedTask(self.create_task(legion.tw_remote.tw, 'paint ceiling'), legion)
+        rtask2 = SharedTask(self.create_task(legion.tw_remote.tw, 'clean floor'), legion)
+        ltask2.tw_task['priority'] = 'h'
+        ltask2.save()
+        synclist = [SyncElement(ltask1, None, None, 'UPLOAD', 'UPLOAD'),
+                    SyncElement(ltask2, rtask2, ltask2.different_fields(rtask2), 'CONFLICT', 'UPLOAD'),
+                    SyncElement(None, rtask1, None, 'DOWNLOAD', 'DOWNLOAD'), ]
+        syncmanager.synclist = synclist
+        syncmanager.carry_out_sync()
+        self.assertEqual(len(legion.tw_remote.tasks(['paint walls'])), 1)
+        self.assertEqual(len(legion.tw_remote.tasks(['clean floor'])), 1)
+        self.assertEqual(len(legion.tw_remote.tasks(['clean floor', 'pri:h'])), 1)
+        self.assertEqual(len(legion.tw_local.tasks(['clean floor'])), 1)
 
-#if __name__ == '__main__':
-#    unittest.main()
+
+
+
+# if __name__ == '__main__':
+# unittest.main()
 
 suite = unittest.TestLoader().loadTestsFromTestCase(TaskLegionTest)
 unittest.TextTestRunner(verbosity=2).run(suite)
