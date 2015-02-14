@@ -22,7 +22,7 @@ import tempfile
 import unittest
 import shutil
 import os
-from legionlib import TaskGeneral, SyncElement, SharedTask, SyncManager
+from legionlib import TaskGeneral, SyncElement, SharedTask, SyncManager, EnhancedTaskWarrior
 from tasklib.task import Task
 
 
@@ -182,6 +182,33 @@ class TaskLegionTest(unittest.TestCase):
         self.assertEqual(len(legion.tw_remote.tasks(['clean floor'])), 1)
         self.assertEqual(len(legion.tw_remote.tasks(['clean floor', 'pri:h'])), 1)
         self.assertEqual(len(legion.tw_local.tasks(['clean floor'])), 1)
+
+    # class EnhancedTaskWarrior
+    def test_tasks(self):
+        legion = self.create_local_legion()
+        etw = EnhancedTaskWarrior(legion.tw_local.tw, legion)
+        task1 = self.create_task(etw.tw, 'paint walls')
+        task2 = self.create_task(etw.tw, 'clean floor')
+        task3 = self.create_task(etw.tw, 'paint ceilling')
+        task2['project'] = 'foo'
+        task3['priority'] = 'h'
+        task3['project'] = 'bar'
+        task1.save()
+        task2.save()
+        task3.save()
+        self.assertEqual(type(etw.tasks(['paint walls'])[0]), SharedTask)
+        self.assertEqual(len(etw.tasks(['paint walls'])), 1)
+        self.assertEqual(len(etw.tasks(['pro:foo'])), 1)
+        self.assertEqual(len(etw.tasks(['pri:h', 'pro:bar'])), 1)
+
+    def test_add_task(self):
+        legion = self.create_local_legion()
+        etw = EnhancedTaskWarrior(legion.tw_local.tw, legion)
+        task = self.create_task(etw.tw, 'paint walls')
+        task['priority'] = 'h'
+        task['project'] = 'foo'
+        etw.add_task(SharedTask(task, legion))
+        self.assertEqual(len(etw.tasks(['paint walls', 'pri:h', 'pro:foo'])), 1)
 
 
 

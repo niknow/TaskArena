@@ -33,14 +33,6 @@ uda_config_list = [
 ]
 
 
-class SyncAction():
-    upload = 'UPLOAD'
-    sownload = 'DOWNLOAD'
-
-    def __init__(self):
-        pass
-
-
 class SharedTask(object):
     """ A Task that can be shared in a legion."""
 
@@ -254,7 +246,7 @@ class SyncManager(object):
                         self.legion.IOManager.send_message("Task downloaded.", 1, 0)
                     elif sc == 'c':
                         self.legion.IOManager.send_message("Sync canceled.", 0, 1)
-                        synclist = []
+                        self.synclist = []
                         break
         else:
             self.legion.IOManager.send_message("Legion " + self.legion.ID + " is in sync.", 0, 1)
