@@ -210,7 +210,48 @@ class TaskLegionTest(unittest.TestCase):
         etw.add_task(SharedTask(task, legion))
         self.assertEqual(len(etw.tasks(['paint walls', 'pri:h', 'pro:foo'])), 1)
 
+    # class SharedTask
+    def test_create_shared_task(self):
+        legion = self.create_local_legion()
+        task = self.create_task(legion.tw_local.tw, 'paint walls')
+        shared_task = SharedTask(task, legion)
+        self.assertEqual(shared_task.Legion.ID, legion.ID)
+        self.assertNotEqual(shared_task.LegionID, None)
 
+    def test_remove_shared_task(self):
+        legion = self.create_local_legion()
+        task = self.create_task(legion.tw_local.tw, 'paint walls')
+        shared_task = SharedTask(task, legion)
+        shared_task.save()
+        shared_task.remove()
+        self.assertEqual(shared_task.tw_task['Legion'], '')
+        self.assertEqual(shared_task.tw_task['LegionID'], '')
+
+    def test_update_shared_task(self):
+        legion = self.create_local_legion()
+        task = self.create_task(legion.tw_local.tw, 'paint walls')
+        shared_task1 = SharedTask(task, legion)
+        shared_task2 = SharedTask(task, legion)
+        shared_task2.tw_task['description'] = 'paint ceilling'
+        shared_task2.tw_task['project'] = 'foo'
+        shared_task2.tw_task['priority'] = 'h'
+        shared_task1.update(shared_task2)
+        self.assertEqual(shared_task1.tw_task['description'], shared_task1.tw_task['description'])
+        self.assertEqual(shared_task1.tw_task['project'], shared_task1.tw_task['project'])
+        self.assertEqual(shared_task1.tw_task['priority'], shared_task1.tw_task['priority'])
+
+    def test_different_fields(self):
+        legion = self.create_local_legion()
+        shared_task1 = SharedTask(self.create_task(legion.tw_local.tw, 'paint walls'), legion)
+        shared_task2 = SharedTask(self.create_task(legion.tw_local.tw, 'paint walls'), legion)
+        shared_task2.tw_task['description'] = 'paint ceilling'
+        shared_task2.tw_task['project'] = 'foo'
+        shared_task2.tw_task['priority'] = 'h'
+        fields = shared_task1.different_fields(shared_task2)
+        self.assertEqual(u'description' in fields, True)
+        self.assertEqual(u'project' in fields, True)
+        self.assertEqual(u'priority' in fields, True)
+        self.assertEqual(u'due' in fields, False)
 
 
 # if __name__ == '__main__':
