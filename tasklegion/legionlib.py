@@ -50,7 +50,7 @@ tw_attrs_editable = [
     'tags',
     'until',
     'wait',
-    ]
+]
 
 tw_attrs_read_only = ['id', 'entry', 'urgency', 'uuid', 'modified']
 
@@ -140,7 +140,7 @@ class EnhancedTaskWarrior(object):
     def add_task(self, task):
         t = SharedTask(tlib.Task(self.tw), self.legion)
         for field in tw_attrs_editable:
-                t.tw_task[field] = task.tw_task[field]
+            t.tw_task[field] = task.tw_task[field]
         t.save()
 
 
@@ -211,7 +211,6 @@ class TaskLegion(object):
 
 
 class SyncManager(object):
-
     def __init__(self, legion):
         self.legion = legion
         self.synclist = []
@@ -239,7 +238,8 @@ class SyncManager(object):
 
     def let_user_check_and_modify_synclist(self):
         if self.synclist:
-            self.legion.IOManager.send_message("Suggesting the following sync operations on " + self.legion.ID + "...", 1, 2)
+            self.legion.IOManager.send_message("Suggesting the following sync operations on " + self.legion.ID + "...",
+                                               1, 2)
             sync_command = self.legion.IOManager.sync_preview(self.synclist)
             if sync_command == 'a':
                 for elem in self.synclist:
@@ -305,16 +305,15 @@ class SyncElement(object):
 
 
 class IOManager(object):
-
     def __init__(self, show_output=True, seplength=75):
         self.show_output = show_output
         self.seplength = seplength
 
     def send_message(self, msg, pre_blanks=0, post_blanks=0):
         if self.show_output:
-            print "\n"*pre_blanks
+            print "\n" * pre_blanks
             print msg
-            print "\n"*post_blanks
+            print "\n" * post_blanks
 
     def print_separator(self):
         self.send_message("-" * self.seplength)
@@ -410,8 +409,9 @@ class TaskGeneral(object):
         return str(self.__repr__())
 
     def create_legion(self, lid, ldata, rdata):
-        if id in [p.ID for p in self.legions]:
-            self.IOManager.send_message("Legion " + id + " already exists!")
+        lgn = None
+        if lid in [p.ID for p in self.legions]:
+            self.IOManager.send_message("Legion " + lid + " already exists!")
         else:
             lgn = TaskLegion(lid, ldata, rdata, self.IOManager)
             self.legions.append(lgn)
