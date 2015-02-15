@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 
-# TaskLegion - Adding collaborative functionality to TaskWarrior
+# TaskArena - Adding collaborative functionality to TaskWarrior
 # Copyright (C) 2015  Nikolai Nowaczyk
 #
 # This program is free software; you can redistribute it and/or modify

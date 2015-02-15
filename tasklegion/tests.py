@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# TaskLegion - Adding collaborative functionality to TaskWarrior
+# TaskArena - Adding collaborative functionality to TaskWarrior
 # Copyright (C) 2015  Nikolai Nowaczyk
 #
 # This program is free software; you can redistribute it and/or modify
@@ -53,7 +53,7 @@ class TaskLegionTest(unittest.TestCase):
         return legion
 
     def create_remote_legion(self):
-        legion = self.TG_local.create_legion(self.lid, self.RemoteDir, self.LocalDir)
+        legion = self.TG_remote.create_legion(self.lid, self.RemoteDir, self.LocalDir)
         self.TG_remote.save()
         return legion
 

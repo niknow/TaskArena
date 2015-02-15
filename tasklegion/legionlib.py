@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 
-# TaskLegion - Adding collaborative functionality to TaskWarrior
+# TaskArena - Adding collaborative functionality to TaskWarrior
 # Copyright (C) 2015  Nikolai Nowaczyk
 #
 # This program is free software; you can redistribute it and/or modify
@@ -56,7 +56,7 @@ tw_attrs_read_only = ['id', 'entry', 'urgency', 'uuid', 'modified']
 
 
 class SharedTask(object):
-    """ A Task that can be shared in a legion."""
+    """ A Task that can be shared in an arena."""
 
     def __init__(self, tw_task, lgn=None):
         self.tw_task = tw_task
