@@ -32,6 +32,28 @@ uda_config_list = [
     {'uda.LegionID.label': 'LegionID'},
 ]
 
+tw_attrs_editable = [
+    'annotations',
+    'depends',
+    'description',
+    'due',
+    'end',
+    'imask',
+    'mask',
+    'parent',
+    'priority',
+    'project',
+    'recur',
+    'scheduled',
+    'start',
+    'status',
+    'tags',
+    'until',
+    'wait',
+    ]
+
+tw_attrs_read_only = ['id', 'entry', 'urgency', 'uuid', 'modified']
+
 
 class SharedTask(object):
     """ A Task that can be shared in a legion."""
@@ -71,24 +93,15 @@ class SharedTask(object):
         return self.tw_task['modified'] if self.tw_task['modified'] else self.tw_task['entry']
 
     def update(self, other):
-        for k, v in self.tw_task._data.iteritems():
-            if not k in self.tw_task.read_only_fields:
-                self.tw_task[k] = other.tw_task[k]
-        for k, v in other.tw_task._data.iteritems():
-            if not k in self.tw_task.read_only_fields:
-                self.tw_task[k] = other.tw_task[k]
+        for field in tw_attrs_editable:
+            if self.tw_task[field] != other.tw_task[field]:
+                self.tw_task[field] = other.tw_task[field]
 
     def different_fields(self, other):
         result = []
-        for k, v in self.tw_task._data.iteritems():
-            if not k in self.tw_task.read_only_fields:
-                if self.tw_task[k] != other.tw_task[k]:
-                    result.append(k)
-        for k, v in other.tw_task._data.iteritems():
-            if not k in self.tw_task.read_only_fields:
-                if self.tw_task[k] != other.tw_task[k]:
-                    if not k in result:
-                        result.append(k)
+        for field in tw_attrs_editable:
+            if self.tw_task[field] != other.tw_task[field]:
+                result.append(field)
         return result
 
     def __eq__(self, other):
@@ -124,12 +137,10 @@ class EnhancedTaskWarrior(object):
         return [SharedTask(task, self.legion) for task in
                 self.tw.tasks.filter(' '.join(pattern))]
 
-    # todo: can this be done with tasklib already?
     def add_task(self, task):
         t = SharedTask(tlib.Task(self.tw), self.legion)
-        for k, v in task.tw_task._data.iteritems():
-            if not k in task.tw_task.read_only_fields:
-                t.tw_task[k] = v
+        for field in tw_attrs_editable:
+                t.tw_task[field] = task.tw_task[field]
         t.save()
 
 
