@@ -26,10 +26,10 @@ import os.path
 
 
 uda_config_list = [
-    {'uda.Legion.type': 'string'},
-    {'uda.Legion.label': 'Legion'},
-    {'uda.LegionID.type': 'numeric'},
-    {'uda.LegionID.label': 'LegionID'},
+    {'uda.Arena.type': 'string'},
+    {'uda.Arena.label': 'Arena'},
+    {'uda.ArenaTaskID.type': 'numeric'},
+    {'uda.ArenaTaskID.label': 'ArenaTaskID'},
 ]
 
 tw_attrs_editable = [
@@ -58,36 +58,36 @@ tw_attrs_read_only = ['id', 'entry', 'urgency', 'uuid', 'modified']
 class SharedTask(object):
     """ A Task that can be shared in an arena."""
 
-    def __init__(self, tw_task, lgn=None):
+    def __init__(self, tw_task, arena=None):
         self.tw_task = tw_task
-        self.Legion = lgn
-        self._LegionID = None
+        self.Arena = arena
+        self._ArenaTaskID = None
 
-    def _get_legion(self):
-        return self._Legion
+    def _get_arena(self):
+        return self._Arena
 
-    def _set_legion(self, value):
-        self._Legion = value
+    def _set_arena(self, value):
+        self._Arena = value
         if value:
-            self.tw_task['Legion'] = self.Legion.ID
-            if not self.LegionID:
-                self.LegionID = uuid.uuid4().__int__()
+            self.tw_task['Arena'] = self.Arena.ID
+            if not self.ArenaTaskID:
+                self.ArenaTaskID = uuid.uuid4().__int__()
         else:
             self.remove()
 
-    Legion = property(_get_legion, _set_legion)
+    Arena = property(_get_arena, _set_arena)
 
-    def _get_legion_id(self):
-        return self.tw_task['LegionID']
+    def _get_arena_task_id(self):
+        return self.tw_task['ArenaTaskID']
 
-    def _set_legion_id(self, value):
-        self.tw_task['LegionID'] = value
+    def _set_arena_task_id(self, value):
+        self.tw_task['ArenaTaskID'] = value
 
-    LegionID = property(_get_legion_id, _set_legion_id)
+    ArenaTaskID = property(_get_arena_task_id, _set_arena_task_id)
 
     def remove(self):
-        self.tw_task['Legion'] = ''
-        self.tw_task['LegionID'] = ''
+        self.tw_task['Arena'] = ''
+        self.tw_task['ArenaTaskID'] = ''
 
     def last_modified(self):
         return self.tw_task['modified'] if self.tw_task['modified'] else self.tw_task['entry']
@@ -106,7 +106,7 @@ class SharedTask(object):
 
     def __eq__(self, other):
         if isinstance(other, self.__class__):
-            return self.LegionID == other.LegionID
+            return self.ArenaTaskID == other.ArenaTaskID
         else:
             return False
 
@@ -114,7 +114,7 @@ class SharedTask(object):
         return not self.__eq__(other)
 
     def __repr__(self):
-        return str({'Legion': self.Legion.ID, 'LegionID:': self.LegionID, 'tw_task': self.tw_task.__dict__})
+        return str({'Arena': self.Arena.ID, 'ArenaTaskID:': self.ArenaTaskID, 'tw_task': self.tw_task.__dict__})
 
     def __str__(self):
         return str(self.__repr__())
@@ -127,32 +127,32 @@ class SharedTask(object):
 
 
 class EnhancedTaskWarrior(object):
-    def __init__(self, tw, lgn):
+    def __init__(self, tw, arena):
         self.tw = tw
-        self.legion = lgn
+        self.arena = arena
         for uda in uda_config_list:
             self.tw.config.update(uda)
 
     def tasks(self, pattern):
-        return [SharedTask(task, self.legion) for task in
+        return [SharedTask(task, self.arena) for task in
                 self.tw.tasks.filter(' '.join(pattern))]
 
     def add_task(self, task):
-        t = SharedTask(tlib.Task(self.tw), self.legion)
+        t = SharedTask(tlib.Task(self.tw), self.arena)
         for field in tw_attrs_editable:
             t.tw_task[field] = task.tw_task[field]
         t.save()
 
 
-class TaskLegion(object):
+class TaskArena(object):
     """ A project that is shared with others. """
 
-    def __init__(self, lid='', ldata='/', rdata='/', iomanager=None):
+    def __init__(self, arena_name='', ldata='/', rdata='/', iomanager=None):
         self._local_data = None
         self._remote_data = None
         self.tw_local = None
         self.tw_remote = None
-        self.ID = lid
+        self.ID = arena_name
         self.local_data = ldata
         self.remote_data = rdata
         self.IOManager = iomanager
@@ -198,7 +198,7 @@ class TaskLegion(object):
         self.IOManager.send_message("Tasks added.")
 
     def remove(self, pattern):
-        for ta_task in self.tw_local.tasks([pattern, 'Legion:' + self.ID]):
+        for ta_task in self.tw_local.tasks([pattern, 'Arena:' + self.ID]):
             ta_task.remove()
             ta_task.save()
         self.IOManager.send_message("Tasks removed from " + self.ID + " .")
@@ -211,13 +211,13 @@ class TaskLegion(object):
 
 
 class SyncManager(object):
-    def __init__(self, legion):
-        self.legion = legion
+    def __init__(self, arena):
+        self.arena = arena
         self.synclist = []
 
     def generate_synclist(self):
-        local_tasks = self.legion.tw_local.tasks('')
-        remote_tasks = self.legion.tw_remote.tasks('')
+        local_tasks = self.arena.tw_local.tasks('')
+        remote_tasks = self.arena.tw_remote.tasks('')
         for ltask in local_tasks:
             rtask = next((t for t in remote_tasks if t == ltask), None)
             if rtask:
@@ -238,29 +238,29 @@ class SyncManager(object):
 
     def let_user_check_and_modify_synclist(self):
         if self.synclist:
-            self.legion.IOManager.send_message("Suggesting the following sync operations on " + self.legion.ID + "...",
+            self.arena.IOManager.send_message("Suggesting the following sync operations on " + self.arena.ID + "...",
                                                1, 2)
-            sync_command = self.legion.IOManager.sync_preview(self.synclist)
+            sync_command = self.arena.IOManager.sync_preview(self.synclist)
             if sync_command == 'a':
                 for elem in self.synclist:
                     elem.action = elem.suggestion
             elif sync_command == 'm':
-                self.legion.IOManager.send_message("Starting manual sync...", 1, 1)
+                self.arena.IOManager.send_message("Starting manual sync...", 1, 1)
                 for elem in self.synclist:
-                    self.legion.IOManager.print_separator()
-                    sc = self.legion.IOManager.sync_choice(elem)
+                    self.arena.IOManager.print_separator()
+                    sc = self.arena.IOManager.sync_choice(elem)
                     if sc == 'u':
                         elem.action = 'UPLOAD'
-                        self.legion.IOManager.send_message("Task uploaded.", 1, 0)
+                        self.arena.IOManager.send_message("Task uploaded.", 1, 0)
                     elif sc == 'd':
                         elem.action = 'DOWNLOAD'
-                        self.legion.IOManager.send_message("Task downloaded.", 1, 0)
+                        self.arena.IOManager.send_message("Task downloaded.", 1, 0)
                     elif sc == 'c':
-                        self.legion.IOManager.send_message("Sync canceled.", 0, 1)
+                        self.arena.IOManager.send_message("Sync canceled.", 0, 1)
                         self.synclist = []
                         break
         else:
-            self.legion.IOManager.send_message("Legion " + self.legion.ID + " is in sync.", 0, 1)
+            self.arena.IOManager.send_message("Arena " + self.arena.ID + " is in sync.", 0, 1)
 
     def carry_out_sync(self):
         for elem in self.synclist:
@@ -269,14 +269,14 @@ class SyncManager(object):
                     elem.remote_task.update(elem.local_task)
                     elem.remote_task.save()
                 else:
-                    self.legion.tw_remote.add_task(elem.local_task)
+                    self.arena.tw_remote.add_task(elem.local_task)
             elif elem.action == 'DOWNLOAD':
                 if elem.local_task:
                     elem.local_task.update(elem.remote_task)
                     elem.local_task.save()
                 else:
-                    self.legion.tw_local.add_task(elem.remote_task)
-        self.legion.IOManager.send_message("Sync complete.", 1, 1)
+                    self.arena.tw_local.add_task(elem.remote_task)
+        self.arena.IOManager.send_message("Sync complete.", 1, 1)
 
 
 class SyncElement(object):
@@ -335,7 +335,7 @@ class IOManager(object):
     def sync_choice(self, e):
         if e.local_task:
             self.send_message("Task Description: " + e.local_task.tw_task['description'])
-            self.send_message("LegionID        : " + e.local_task.LegionID)
+            self.send_message("ArenaTaskID     : " + e.local_task.ArenaTaskID)
             if e.remote_task:
                 self.send_message("Task exists in both repositories.", 1, 1)
                 self.send_message("Last modified (local) : " + e.local_last_modified)
@@ -356,17 +356,17 @@ class IOManager(object):
         else:
             self.print_separator()
             self.send_message("Description: " + e.remote_task.tw_task['description'])
-            self.send_message("LegionID: " + e.remote_task.LegionID)
+            self.send_message("ArenaTaskID: " + e.remote_task.ArenaTaskID)
             self.send_message("This task does not yet exist on local.", 1, 0)
             result = raw_input("\nDo you want to (d)ownload, (s)kip or (c)ancel sync? (d/s/c) ")
         return result
 
 
 class TaskGeneral(object):
-    """ A class to handle all your TaskLegions """
+    """ A class to handle all your TaskArenas """
 
     def __init__(self, cfile, output=True):
-        self.legions = []
+        self.arenas = []
         self.IOManager = IOManager(output)
         self.configfile = cfile
         self.load(cfile)
@@ -376,12 +376,12 @@ class TaskGeneral(object):
             f = open(cfile)
             try:
                 self.json = json.load(f)
-                self.IOManager.send_message("Legions loaded.")
+                self.IOManager.send_message("Arenass loaded.")
             except:
                 self.IOManager.send_message("Warning: Config file " + cfile + " is empty or corrupt.")
         else:
             open(cfile, 'w+')
-            self.IOManager.send_message("New .legionrc created at " + cfile)
+            self.IOManager.send_message("New .arenarc created at " + cfile)
 
     def save(self):
         f = open(self.configfile, 'w+')
@@ -389,42 +389,42 @@ class TaskGeneral(object):
         self.IOManager.send_message("Task General saved.")
 
     def get_json(self):
-        return {'legions': [p.json for p in self.legions]}
+        return {'arenas': [p.json for p in self.arenas]}
 
     def set_json(self, data):
-        self.legions = []
-        for json_project in data['legions']:
-            lgn = TaskLegion()
-            lgn.json = json_project
-            lgn.IOManager = self.IOManager
-            self.legions.append(lgn)
+        self.arenas = []
+        for json_project in data['arenas']:
+            arena = TaskArena()
+            arena.json = json_project
+            arena.IOManager = self.IOManager
+            self.arenas.append(arena)
 
     json = property(get_json, set_json)
 
     def __repr__(self):
         return {'configfile': self.configfile,
-                'legions': [p.__repr__() for p in self.legions]}
+                'arenas': [p.__repr__() for p in self.arenas]}
 
     def __str__(self):
         return str(self.__repr__())
 
-    def create_legion(self, lid, ldata, rdata):
-        lgn = None
-        if lid in [p.ID for p in self.legions]:
-            self.IOManager.send_message("Legion " + lid + " already exists!")
+    def create_arena(self, arena_id, ldata, rdata):
+        arena = None
+        if arena_id in [p.ID for p in self.arenas]:
+            self.IOManager.send_message("Arena " + arena_id + " already exists!")
         else:
-            lgn = TaskLegion(lid, ldata, rdata, self.IOManager)
-            self.legions.append(lgn)
-            self.IOManager.send_message("Legion " + lgn.ID + " created.")
-        return lgn
+            arena = TaskArena(arena_id, ldata, rdata, self.IOManager)
+            self.arenas.append(arena)
+            self.IOManager.send_message("Arena " + arena.ID + " created.")
+        return arena
 
-    def delete_legion(self, lgn):
-        lgn.remove('')
-        self.legions.remove(lgn)
+    def delete_arena(self, arena):
+        arena.remove('')
+        self.arenas.remove(arena)
         self.save()
-        self.IOManager.send_message("Legion " + lgn.ID + " deleted.")
+        self.IOManager.send_message("Arena " + arena.ID + " deleted.")
 
-    def find(self, lid):
-        for lgn in self.legions:
-            if lgn.ID == lid:
-                return lgn
+    def find(self, arena_name):
+        for arena in self.arenas:
+            if arena.ID == arena_name:
+                return arena

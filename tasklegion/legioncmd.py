@@ -55,12 +55,12 @@ if args.command:
         ID = raw_input('Enter an ID: ')
         ldata = raw_input('Enter local data.location: ')
         rdata = raw_input('Enter remote data.location: ')
-        TG.create_legion(ID, ldata, rdata)
+        TG.create_arena(ID, ldata, rdata)
         TG.save()
     elif args.command == 'list':
-        if TG.legions:
+        if TG.arenas:
             print "The following legions are available:\n"
-            for legion in TG.legions:
+            for legion in TG.arenas:
                 print "Legion: " + legion.ID
                 print "local: " + legion.local_data
                 print "remote: " + legion.remote_data
@@ -73,7 +73,7 @@ if args.command:
                 elif args.command == 'remove':
                     legion.remove(args.filter)
                 elif args.command == 'delete':
-                    TG.delete_legion(legion)
+                    TG.delete_arena(legion)
                 elif args.command == 'sync':
                     legion.sync()
             else:
