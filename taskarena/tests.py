@@ -22,7 +22,7 @@ import tempfile
 import unittest
 import shutil
 import os
-from legionlib import TaskGeneral, SyncElement, SharedTask, SyncManager, EnhancedTaskWarrior
+from arenalib import TaskGeneral, SyncElement, SharedTask, SyncManager, EnhancedTaskWarrior
 from tasklib.task import Task
 
 
