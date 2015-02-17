@@ -123,7 +123,7 @@ class SharedTask(object):
         try:
             self.tw_task.save()
         except:
-            print "Saving failed."
+            self.Arena.IOManager.send_message("Saving failed.")
 
 
 class EnhancedTaskWarrior(object):
@@ -239,7 +239,7 @@ class SyncManager(object):
     def let_user_check_and_modify_synclist(self):
         if self.synclist:
             self.arena.IOManager.send_message("Suggesting the following sync operations on " + self.arena.name + "...",
-                                               1, 2)
+                                              1, 2)
             sync_command = self.arena.IOManager.sync_preview(self.synclist)
             if sync_command == 'a':
                 for elem in self.synclist:
@@ -251,10 +251,10 @@ class SyncManager(object):
                     sc = self.arena.IOManager.sync_choice(elem)
                     if sc == 'u':
                         elem.action = 'UPLOAD'
-                        self.arena.IOManager.send_message("Task uploaded.", 1, 0)
+                        self.arena.IOManager.send_message("Task uploaded.", 1)
                     elif sc == 'd':
                         elem.action = 'DOWNLOAD'
-                        self.arena.IOManager.send_message("Task downloaded.", 1, 0)
+                        self.arena.IOManager.send_message("Task downloaded.", 1)
                     elif sc == 'c':
                         self.arena.IOManager.send_message("Sync canceled.", 0, 1)
                         self.synclist = []
@@ -309,28 +309,35 @@ class IOManager(object):
         self.show_output = show_output
         self.seplength = seplength
 
+    @staticmethod
+    def formatted_print(t):
+        print("{0:6}   {1:25}   {2:20}   {3:10}\n".format(t[0][0:6], t[1][0:25], t[2][0:20], t[3][0:10]))
+
+    @staticmethod
+    def get_input(msg, pre_blanks=0, post_blanks=0):
+        print("\n" * pre_blanks)
+        data = raw_input(msg)
+        print("\n" * post_blanks)
+        return data
+
     def send_message(self, msg, pre_blanks=0, post_blanks=0):
         if self.show_output:
-            print "\n" * pre_blanks
-            print msg
-            print "\n" * post_blanks
+            print("\n" * pre_blanks)
+            print(msg)
+            print("\n" * post_blanks)
 
     def print_separator(self):
         self.send_message("-" * self.seplength)
 
     def sync_preview(self, synclist):
         self.print_separator()
-        self.formatted_print(('', 'Task', 'LastModified', 'Suggestion'))
+        IOManager.formatted_print(('', 'Task', 'LastModified', 'Suggestion'))
         self.print_separator()
         for e in synclist:
-            self.formatted_print(('Local', e.local_description, e.local_last_modified, ''))
-            self.formatted_print(('Remote', e.remote_description, e.remote_last_modified, e.suggestion))
+            IOManager.formatted_print(('Local', e.local_description, e.local_last_modified, ''))
+            IOManager.formatted_print(('Remote', e.remote_description, e.remote_last_modified, e.suggestion))
             self.print_separator()
-
-        return raw_input("\nDo you want to sync (a)ll, sync (m)anually or (c)ancel? (a/m/c) ")
-
-    def formatted_print(self, t):
-        print "{0:6}   {1:25}   {2:20}   {3:10}\n".format(t[0][0:6], t[1][0:25], t[2][0:20], t[3][0:10])
+        return IOManager.get_input("Do you want to sync (a)ll, sync (m)anually or (c)ancel? (a/m/c) ", 1)
 
     def sync_choice(self, e):
         if e.local_task:
@@ -340,7 +347,6 @@ class IOManager(object):
                 self.send_message("Task exists in both repositories.", 1, 1)
                 self.send_message("Last modified (local) : " + e.local_last_modified)
                 self.send_message("Last modified (remote): " + e.remote_last_modified)
-
                 self.send_message("Suggesting to " + e.suggestion + ".", 1, 1)
                 self.send_message("This would cause the following modifications:", 0, 1)
                 for field in e.fields:
@@ -348,17 +354,17 @@ class IOManager(object):
                     remote_field = str(e.remote_task.tw_task[field]) if e.remote_task.tw_task[field] else '(empty)'
                     self.send_message(field + ": " + local_field + (
                         " -> " if e.suggestion == 'UPLOAD' else ' <- ') + remote_field)
-
-                result = raw_input("\nDo you want to (u)pload, (d)ownload, (s)kip or (c)ancel sync? (u/d/s/c) ")
+                result = IOManager.get_input("Do you want to (u)pload, (d)ownload, (s)kip or (c)ancel sync? (u/d/s/c) ",
+                                             1)
             else:
-                self.send_message("This task does not yet exist on remote. Suggestion: " + e.suggestion, 1, 0)
-                result = raw_input("\nDo you want to (u)pload, (s)kip or (c)ancel sync? (u/s/c) ")
+                self.send_message("This task does not yet exist on remote. Suggestion: " + e.suggestion, 1)
+                result = IOManager.get_input("Do you want to (u)pload, (s)kip or (c)ancel sync? (u/s/c) ", 1)
         else:
             self.print_separator()
             self.send_message("Description: " + e.remote_task.tw_task['description'])
             self.send_message("ArenaTaskID: " + e.remote_task.ArenaTaskID)
-            self.send_message("This task does not yet exist on local.", 1, 0)
-            result = raw_input("\nDo you want to (d)ownload, (s)kip or (c)ancel sync? (d/s/c) ")
+            self.send_message("This task does not yet exist on local.", 1)
+            result = IOManager.get_input("Do you want to (d)ownload, (s)kip or (c)ancel sync? (d/s/c) ", 1)
         return result
 
 
@@ -376,12 +382,12 @@ class TaskEmperor(object):
             f = open(cfile)
             try:
                 self.json = json.load(f)
-                self.IOManager.send_message("Arenass loaded.")
+                self.IOManager.send_message("Arenas loaded.")
             except:
                 self.IOManager.send_message("Warning: Config file " + cfile + " is empty or corrupt.")
         else:
             open(cfile, 'w+')
-            self.IOManager.send_message("New .arenarc created at " + cfile)
+            self.IOManager.send_message("New arena config created at " + cfile)
 
     def save(self):
         f = open(self.configfile, 'w+')

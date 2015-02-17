@@ -27,7 +27,7 @@ from tasklib.task import Task
 
 
 class TaskArenaTest(unittest.TestCase):
-    # --- test setup and rear down ---
+    # --- test setup and tear down ---
     def setUp(self):
         self.LocalDir = tempfile.mkdtemp(dir='.')
         self.RemoteDir = tempfile.mkdtemp(dir='.')
