@@ -69,7 +69,7 @@ class SharedTask(object):
     def _set_arena(self, value):
         self._Arena = value
         if value:
-            self.tw_task['Arena'] = self.Arena.ID
+            self.tw_task['Arena'] = self.Arena.name
             if not self.ArenaTaskID:
                 self.ArenaTaskID = uuid.uuid4().__int__()
         else:
@@ -114,7 +114,7 @@ class SharedTask(object):
         return not self.__eq__(other)
 
     def __repr__(self):
-        return str({'Arena': self.Arena.ID, 'ArenaTaskID:': self.ArenaTaskID, 'tw_task': self.tw_task.__dict__})
+        return str({'Arena': self.Arena.name, 'ArenaTaskID:': self.ArenaTaskID, 'tw_task': self.tw_task.__dict__})
 
     def __str__(self):
         return str(self.__repr__())
@@ -152,7 +152,7 @@ class TaskArena(object):
         self._remote_data = None
         self.tw_local = None
         self.tw_remote = None
-        self.ID = arena_name
+        self.name = arena_name
         self.local_data = ldata
         self.remote_data = rdata
         self.IOManager = iomanager
@@ -180,14 +180,14 @@ class TaskArena(object):
         return self.__repr__()
 
     def set_json(self, data):
-        self.ID = data['ID']
+        self.name = data['name']
         self.local_data = data['local_data']
         self.remote_data = data['remote_data']
 
     json = property(get_json, set_json)
 
     def __repr__(self):
-        return {'ID': self.ID, 'local_data': self.local_data, 'remote_data': self.remote_data}
+        return {'name': self.name, 'local_data': self.local_data, 'remote_data': self.remote_data}
 
     def __str__(self):
         return str(self.__repr__())
@@ -198,10 +198,10 @@ class TaskArena(object):
         self.IOManager.send_message("Tasks added.")
 
     def remove(self, pattern):
-        for ta_task in self.tw_local.tasks([pattern, 'Arena:' + self.ID]):
+        for ta_task in self.tw_local.tasks([pattern, 'Arena:' + self.name]):
             ta_task.remove()
             ta_task.save()
-        self.IOManager.send_message("Tasks removed from " + self.ID + " .")
+        self.IOManager.send_message("Tasks removed from " + self.name + " .")
 
     def sync(self):
         self.SyncManager.generate_synclist()
@@ -238,7 +238,7 @@ class SyncManager(object):
 
     def let_user_check_and_modify_synclist(self):
         if self.synclist:
-            self.arena.IOManager.send_message("Suggesting the following sync operations on " + self.arena.ID + "...",
+            self.arena.IOManager.send_message("Suggesting the following sync operations on " + self.arena.name + "...",
                                                1, 2)
             sync_command = self.arena.IOManager.sync_preview(self.synclist)
             if sync_command == 'a':
@@ -260,7 +260,7 @@ class SyncManager(object):
                         self.synclist = []
                         break
         else:
-            self.arena.IOManager.send_message("Arena " + self.arena.ID + " is in sync.", 0, 1)
+            self.arena.IOManager.send_message("Arena " + self.arena.name + " is in sync.", 0, 1)
 
     def carry_out_sync(self):
         for elem in self.synclist:
@@ -362,7 +362,7 @@ class IOManager(object):
         return result
 
 
-class TaskGeneral(object):
+class TaskEmperor(object):
     """ A class to handle all your TaskArenas """
 
     def __init__(self, cfile, output=True):
@@ -410,21 +410,21 @@ class TaskGeneral(object):
 
     def create_arena(self, arena_id, ldata, rdata):
         arena = None
-        if arena_id in [p.ID for p in self.arenas]:
+        if arena_id in [p.name for p in self.arenas]:
             self.IOManager.send_message("Arena " + arena_id + " already exists!")
         else:
             arena = TaskArena(arena_id, ldata, rdata, self.IOManager)
             self.arenas.append(arena)
-            self.IOManager.send_message("Arena " + arena.ID + " created.")
+            self.IOManager.send_message("Arena " + arena.name + " created.")
         return arena
 
     def delete_arena(self, arena):
         arena.remove('')
         self.arenas.remove(arena)
         self.save()
-        self.IOManager.send_message("Arena " + arena.ID + " deleted.")
+        self.IOManager.send_message("Arena " + arena.name + " deleted.")
 
     def find(self, arena_name):
         for arena in self.arenas:
-            if arena.ID == arena_name:
+            if arena.name == arena_name:
                 return arena

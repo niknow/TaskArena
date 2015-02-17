@@ -22,7 +22,7 @@ import tempfile
 import unittest
 import shutil
 import os
-from arenalib import TaskGeneral, SyncElement, SharedTask, SyncManager, EnhancedTaskWarrior
+from arenalib import TaskEmperor, SyncElement, SharedTask, SyncManager, EnhancedTaskWarrior
 from tasklib.task import Task
 
 
@@ -33,9 +33,9 @@ class TaskArenaTest(unittest.TestCase):
         self.RemoteDir = tempfile.mkdtemp(dir='.')
         self.ConfigFileLocal = tempfile.mkstemp(dir='.')
         self.ConfigFileRemote = tempfile.mkstemp(dir='.')
-        self.TG_local = TaskGeneral(self.ConfigFileLocal[1], False)
-        self.TG_remote = TaskGeneral(self.ConfigFileRemote[1], False)
-        self.lid = "RefurbishHouse"
+        self.TE_local = TaskEmperor(self.ConfigFileLocal[1], False)
+        self.TE_remote = TaskEmperor(self.ConfigFileRemote[1], False)
+        self.arena_name = "RefurbishHouse"
 
     def tearDown(self):
         shutil.rmtree(self.LocalDir)
@@ -48,13 +48,13 @@ class TaskArenaTest(unittest.TestCase):
     # --- helper functions ---
 
     def create_local_arena(self):
-        arena = self.TG_local.create_arena(self.lid, self.LocalDir, self.RemoteDir)
-        self.TG_local.save()
+        arena = self.TE_local.create_arena(self.arena_name, self.LocalDir, self.RemoteDir)
+        self.TE_local.save()
         return arena
 
     def create_remote_arena(self):
-        arena = self.TG_remote.create_arena(self.lid, self.RemoteDir, self.LocalDir)
-        self.TG_remote.save()
+        arena = self.TE_remote.create_arena(self.arena_name, self.RemoteDir, self.LocalDir)
+        self.TE_remote.save()
         return arena
 
     def create_task(self, warrior, description):
@@ -65,19 +65,19 @@ class TaskArenaTest(unittest.TestCase):
 
     # --- tests ---
 
-    # class TaskGeneral
+    # class TaskEmperor
     def test_create_arena(self):
         arena = self.create_local_arena()
-        self.assertEqual(self.TG_local.find(self.lid), arena)
+        self.assertEqual(self.TE_local.find(self.arena_name), arena)
 
     def test_delete_arena(self):
         arena = self.create_local_arena()
-        self.TG_local.delete_arena(arena)
-        self.assertEqual(self.TG_local.find(self.lid), None)
+        self.TE_local.delete_arena(arena)
+        self.assertEqual(self.TE_local.find(self.arena_name), None)
 
     def test_find_arena(self):
-        arena = self.TG_local.find(self.lid)
-        found = self.TG_local.find(self.lid)
+        arena = self.TE_local.find(self.arena_name)
+        found = self.TE_local.find(self.arena_name)
         self.assertEqual(arena, found)
 
     # class TaskArena
@@ -86,7 +86,7 @@ class TaskArenaTest(unittest.TestCase):
         task_description = 'paint walls'
         self.create_task(arena.tw_local.tw, task_description)
         arena.add(task_description)
-        loaded_task = arena.tw_local.tasks(['Arena:' + self.lid, task_description])[0]
+        loaded_task = arena.tw_local.tasks(['Arena:' + self.arena_name, task_description])[0]
         self.assertEqual(task_description, loaded_task.tw_task['description'])
 
     def test_remove_local_task(self):
@@ -95,7 +95,7 @@ class TaskArenaTest(unittest.TestCase):
         self.create_task(arena.tw_local.tw, task_description)
         arena.add(task_description)
         arena.remove(task_description)
-        loaded_task = arena.tw_local.tasks(['Arena:' + self.lid, task_description])
+        loaded_task = arena.tw_local.tasks(['Arena:' + self.arena_name, task_description])
         self.assertEqual(loaded_task, [])
 
     def test_create_add_remote_task(self):
@@ -103,7 +103,7 @@ class TaskArenaTest(unittest.TestCase):
         task_description = "paint ceiling"
         self.create_task(remote_arena.tw_local.tw, task_description)
         remote_arena.add(task_description)
-        loaded_task = remote_arena.tw_local.tasks(['Arena:' + self.lid, task_description])[0]
+        loaded_task = remote_arena.tw_local.tasks(['Arena:' + self.arena_name, task_description])[0]
         self.assertEqual(task_description, loaded_task.tw_task['description'])
 
     def test_remove_remote_task(self):
@@ -112,7 +112,7 @@ class TaskArenaTest(unittest.TestCase):
         self.create_task(remote_arena.tw_local.tw, task_description)
         remote_arena.add(task_description)
         remote_arena.remove(task_description)
-        loaded_task = remote_arena.tw_local.tasks(['Arena:' + self.lid, task_description])
+        loaded_task = remote_arena.tw_local.tasks(['Arena:' + self.arena_name, task_description])
         self.assertEqual(loaded_task, [])
 
     # class SyncManager
@@ -215,7 +215,7 @@ class TaskArenaTest(unittest.TestCase):
         arena = self.create_local_arena()
         task = self.create_task(arena.tw_local.tw, 'paint walls')
         shared_task = SharedTask(task, arena)
-        self.assertEqual(shared_task.Arena.ID, arena.ID)
+        self.assertEqual(shared_task.Arena.name, arena.name)
         self.assertNotEqual(shared_task.ArenaTaskID, None)
 
     def test_remove_shared_task(self):
