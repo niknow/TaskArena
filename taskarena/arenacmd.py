@@ -21,7 +21,7 @@
 
 import argparse
 import subprocess
-from legionlib import *
+from arenalib import *
 
 
 def execute_command(command_args):
@@ -34,51 +34,54 @@ def execute_command(command_args):
 
 parser = argparse.ArgumentParser()
 parser.add_argument("command", help="command you want to issue")
-parser.add_argument("legion", nargs='?', default='', help="legion you want to issue command to")
+parser.add_argument("arena", nargs='?', default='', help="arena you want to issue commands in")
 parser.add_argument("filter", nargs='?', default='', help="taskwarrior filter you want to restrict your command to")
 args = parser.parse_args()
 
+TE = TaskEmperor()
+io = TE.IOManager
+
 if args.command:
-    configfile = os.path.expanduser("~") + "\\.legionrc"
-    TG = TaskGeneral(configfile)
+    configfile = os.path.expanduser("~") + "\\task_arena_config"
+    TE.configfile = configfile
     if args.command == 'install':
         for uda in uda_config_list:
             execute_command(['task', 'config', uda.keys()[0], uda[uda.keys()[0]]])
-        print "TaskLegion installed."
+        io.send_message("TaskArena installed.")
     elif args.command == 'uninstall':
         for uda in reversed(uda_config_list):
             execute_command(['task', 'config', uda.keys()[0]])
         os.remove(configfile)
-        print "TaskLegion uninstalled."
+        io.send_message("TaskArena uninstalled.")
     elif args.command == 'create':
-        print "Creating new Legion..."
-        ID = raw_input('Enter an ID: ')
-        ldata = raw_input('Enter local data.location: ')
-        rdata = raw_input('Enter remote data.location: ')
-        TG.create_arena(ID, ldata, rdata)
-        TG.save()
+        io.send_message("Creating new Arena...")
+        name = io.get_input('Enter a name: ')
+        ldata = io.get_input('Enter local data.location: ')
+        rdata = io.get_input('Enter remote data.location: ')
+        TE.create_arena(name, ldata, rdata)
+        TE.save()
     elif args.command == 'list':
-        if TG.arenas:
-            print "The following legions are available:\n"
-            for legion in TG.arenas:
-                print "Legion: " + legion.ID
-                print "local: " + legion.local_data
-                print "remote: " + legion.remote_data
+        if TE.arenas:
+            io.send_message("The following arenas are available:", 1, 1)
+            for arena in TE.arenas:
+                io.send_message("arena : " + arena.name)
+                io.send_message("local : " + arena.local_data)
+                io.send_message("remote: " + arena.remote_data)
     elif args.command in ['add', 'remove', 'delete', 'sync']:
-        if args.legion:
-            legion = TG.find(args.legion)
-            if legion:
+        if args.arena:
+            arena = TE.find(args.arena)
+            if arena:
                 if args.command == 'add':
-                    legion.add(args.filter)
+                    arena.add(args.filter)
                 elif args.command == 'remove':
-                    legion.remove(args.filter)
+                    arena.remove(args.filter)
                 elif args.command == 'delete':
-                    TG.delete_arena(legion)
+                    TE.delete_arena(arena)
                 elif args.command == 'sync':
-                    legion.sync()
+                    arena.sync()
             else:
-                print "Legion " + args.legion + " not found."
+                io.send_message("Arena " + args.arena + " not found.")
         else:
-            print "You must supply a LegionID."
+            io.send_message("You must supply an ArenaTaskID.")
 else:
-    print "No command supplied."
+    io.send_message("No command supplied.")

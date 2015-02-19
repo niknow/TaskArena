@@ -33,7 +33,6 @@ uda_config_list = [
 ]
 
 tw_attrs_editable = [
-    'annotations',
     'depends',
     'description',
     'due',
@@ -52,7 +51,17 @@ tw_attrs_editable = [
     'wait',
 ]
 
-tw_attrs_read_only = ['id', 'entry', 'urgency', 'uuid', 'modified']
+tw_attrs_special = [
+    'annotations',
+]
+
+tw_attrs_read_only = [
+    'id',
+    'entry',
+    'urgency',
+    'uuid',
+    'modified'
+]
 
 
 class SharedTask(object):
@@ -141,7 +150,7 @@ class EnhancedTaskWarrior(object):
         t = SharedTask(tlib.Task(self.tw), self.arena)
         for field in tw_attrs_editable:
             t.tw_task[field] = task.tw_task[field]
-        t.save()
+        return t
 
 
 class TaskArena(object):
@@ -267,15 +276,17 @@ class SyncManager(object):
             if elem.action == 'UPLOAD':
                 if elem.remote_task:
                     elem.remote_task.update(elem.local_task)
-                    elem.remote_task.save()
                 else:
-                    self.arena.tw_remote.add_task(elem.local_task)
+                    elem.remote_task = self.arena.tw_remote.add_task(elem.local_task)
+                    elem.remote_task.ArenaTaskID = elem.local_task.ArenaTaskID
+                elem.remote_task.save()
             elif elem.action == 'DOWNLOAD':
                 if elem.local_task:
                     elem.local_task.update(elem.remote_task)
-                    elem.local_task.save()
                 else:
-                    self.arena.tw_local.add_task(elem.remote_task)
+                    elem.local_task = self.arena.tw_local.add_task(elem.remote_task)
+                    elem.local_task.ArenaTaskID = elem.remote_task.ArenaTaskID
+                elem.local_task.save()
         self.arena.IOManager.send_message("Sync complete.", 1, 1)
 
 
@@ -314,6 +325,11 @@ class IOManager(object):
         print("{0:6}   {1:25}   {2:20}   {3:10}\n".format(t[0][0:6], t[1][0:25], t[2][0:20], t[3][0:10]))
 
     @staticmethod
+    def newlines(num):
+        if num:
+            print("\n"*(num-1))
+
+    @staticmethod
     def get_input(msg, pre_blanks=0, post_blanks=0):
         print("\n" * pre_blanks)
         data = raw_input(msg)
@@ -322,9 +338,9 @@ class IOManager(object):
 
     def send_message(self, msg, pre_blanks=0, post_blanks=0):
         if self.show_output:
-            print("\n" * pre_blanks)
+            IOManager.newlines(pre_blanks)
             print(msg)
-            print("\n" * post_blanks)
+            IOManager.newlines(post_blanks)
 
     def print_separator(self):
         self.send_message("-" * self.seplength)
@@ -371,28 +387,37 @@ class IOManager(object):
 class TaskEmperor(object):
     """ A class to handle all your TaskArenas """
 
-    def __init__(self, cfile, output=True):
+    def __init__(self, configfile='', output=True):
         self.arenas = []
         self.IOManager = IOManager(output)
-        self.configfile = cfile
-        self.load(cfile)
+        self.configfile = configfile
 
-    def load(self, cfile):
-        if os.path.isfile(cfile):
-            f = open(cfile)
+    def _get_configfile(self):
+        return self._configfile
+
+    def _set_configfile(self, value):
+        if value:
+            self._configfile = value
+            self.load()
+
+    configfile = property(_get_configfile, _set_configfile)
+
+    def load(self):
+        if os.path.isfile(self.configfile):
+            f = open(self.configfile)
             try:
                 self.json = json.load(f)
                 self.IOManager.send_message("Arenas loaded.")
             except:
-                self.IOManager.send_message("Warning: Config file " + cfile + " is empty or corrupt.")
+                self.IOManager.send_message("Warning: Config file " + self.configfile + " is empty or corrupt.")
         else:
-            open(cfile, 'w+')
-            self.IOManager.send_message("New arena config created at " + cfile)
+            open(self.configfile, 'w+')
+            self.IOManager.send_message("New arena config created at " + self.configfile)
 
     def save(self):
         f = open(self.configfile, 'w+')
         json.dump(self.json, f)
-        self.IOManager.send_message("Task General saved.")
+        self.IOManager.send_message("TaskEmperor saved.")
 
     def get_json(self):
         return {'arenas': [p.json for p in self.arenas]}

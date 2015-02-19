@@ -182,6 +182,8 @@ class TaskArenaTest(unittest.TestCase):
         self.assertEqual(len(arena.tw_remote.tasks(['clean floor'])), 1)
         self.assertEqual(len(arena.tw_remote.tasks(['clean floor', 'pri:h'])), 1)
         self.assertEqual(len(arena.tw_local.tasks(['clean floor'])), 1)
+        for elem in syncmanager.synclist:
+            self.assertEqual(elem.local_task.ArenaTaskID, elem.local_task.ArenaTaskID)
 
     # class EnhancedTaskWarrior
     def test_tasks(self):
@@ -207,7 +209,9 @@ class TaskArenaTest(unittest.TestCase):
         task = self.create_task(etw.tw, 'paint walls')
         task['priority'] = 'h'
         task['project'] = 'foo'
-        etw.add_task(SharedTask(task, arena))
+        stask = SharedTask(task, arena)
+        etw.add_task(stask)
+        stask.save()
         self.assertEqual(len(etw.tasks(['paint walls', 'pri:h', 'pro:foo'])), 1)
 
     # class SharedTask
