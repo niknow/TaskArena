@@ -152,17 +152,15 @@ class TaskArenaTest(unittest.TestCase):
         ltask2 = SharedTask(self.create_task(arena.tw_local.tw, 'clean floor'), arena)
         rtask1 = SharedTask(self.create_task(arena.tw_remote.tw, 'paint ceiling'), arena)
         rtask2 = SharedTask(self.create_task(arena.tw_remote.tw, 'clean floor'), arena)
-        synclist = [SyncElement(ltask1, None, None, 'UPLOAD', 'UPLOAD'),
-                    SyncElement(ltask2, rtask2, ltask2.different_fields(rtask2), 'CONFLICT', 'UPLOAD'),
-                    SyncElement(None, rtask1, None, 'DOWNLOAD', 'DOWNLOAD'), ]
+        synclist = [SyncElement(ltask1, None, None, 'UPLOAD'),
+                    SyncElement(ltask2, rtask2, ltask2.different_fields(rtask2), 'CONFLICT'),
+                    SyncElement(None, rtask1, None, 'DOWNLOAD')]
         syncmanager.synclist = synclist
         syncmanager.suggest_conflict_resolution()
         num_uploads = len([x for x in syncmanager.synclist if x.suggestion == 'UPLOAD'])
         num_downloads = len([x for x in syncmanager.synclist if x.suggestion == 'DOWNLOAD'])
-        num_conflicts = len([x for x in syncmanager.synclist if x.suggestion == 'CONFLICT'])
-        self.assertEqual(num_uploads, 2)
+        self.assertEqual(num_uploads, 1)
         self.assertEqual(num_downloads, 1)
-        self.assertEqual(num_conflicts, 0)
 
     def test_carry_out_sync(self):
         arena = self.create_local_arena()

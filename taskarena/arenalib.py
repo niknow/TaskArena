@@ -224,6 +224,10 @@ class SyncManager(object):
         self.arena = arena
         self.synclist = []
 
+    @property
+    def synclist_not_skipped(self):
+        return [e for e in self.synclist if e.suggestion != 'SKIP']
+
     def generate_synclist(self):
         local_tasks = self.arena.tw_local.tasks('')
         remote_tasks = self.arena.tw_remote.tasks('')
@@ -238,12 +242,18 @@ class SyncManager(object):
                 self.synclist.append(SyncElement(None, rtask, None, 'DOWNLOAD'))
 
     def suggest_conflict_resolution(self):
+        simplified_synclist = []
         for e in self.synclist:
             if e.suggestion == 'CONFLICT':
-                if e.local_task.last_modified() >= e.remote_task.last_modified():
-                    e.suggestion = 'UPLOAD'
-                else:
-                    e.suggestion = 'DOWNLOAD'
+                if e.fields:
+                    if e.local_task.last_modified() >= e.remote_task.last_modified():
+                        e.suggestion = 'UPLOAD'
+                    else:
+                        e.suggestion = 'DOWNLOAD'
+                    simplified_synclist.append(e)
+            else:
+                simplified_synclist.append(e)
+        self.synclist = simplified_synclist
 
     def let_user_check_and_modify_synclist(self):
         if self.synclist:
@@ -264,12 +274,15 @@ class SyncManager(object):
                     elif sc == 'd':
                         elem.action = 'DOWNLOAD'
                         self.arena.IOManager.send_message("Task downloaded.", 1)
+                    elif sc == 's':
+                        elem.action = 'SKIP'
+                        self.arena.IOManager.send_message("Task skipped.", 1)
                     elif sc == 'c':
                         self.arena.IOManager.send_message("Sync canceled.", 0, 1)
                         self.synclist = []
                         break
         else:
-            self.arena.IOManager.send_message("Arena " + self.arena.name + " is in sync.", 0, 1)
+            self.arena.IOManager.send_message("Arena " + self.arena.name + " is in sync.")
 
     def carry_out_sync(self):
         for elem in self.synclist:
@@ -287,7 +300,16 @@ class SyncManager(object):
                     elem.local_task = self.arena.tw_local.add_task(elem.remote_task)
                     elem.local_task.ArenaTaskID = elem.remote_task.ArenaTaskID
                 elem.local_task.save()
-        self.arena.IOManager.send_message("Sync complete.", 1, 1)
+        if self.synclist:
+            self.arena.IOManager.send_message("Sync complete.", 1, 1)
+
+    def __repr__(self):
+        return str({'arena:': self.arena.__str__(),
+                'synclist:': [e.__str__() for e in self.synclist]})
+
+    def __str__(self):
+        return str({'arena:': self.arena.__str__(),
+                    'synclist:': [e.__str__() for e in self.synclist]})
 
 
 class SyncElement(object):
@@ -313,6 +335,20 @@ class SyncElement(object):
     @property
     def remote_last_modified(self):
         return str(self.remote_task.last_modified()) if self.remote_task else ''
+
+    def __repr__(self):
+        return {'local_task': self.local_task.__repr__(),
+                'remote_task:': self.remote_task.__repr__(),
+                'suggestion:': self.suggestion,
+                'action:': self.action,
+                'fields:': self.fields}
+
+    def __str__(self):
+        return str({'local_task': self.local_task,
+                'remote_task:': self.remote_task,
+                'suggestion:': self.suggestion,
+                'action:': self.action,
+                'fields:': self.fields})
 
 
 class IOManager(object):
