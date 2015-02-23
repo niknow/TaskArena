@@ -5,7 +5,7 @@ from setuptools import setup, find_packages
 version = "0.0.1"
 
 setup(
-    name='tasklegion',
+    name='taskarena',
     version=version,
     description='Adding collaborative functionality to TaskWarrior',
     author='Nikolai Nowaczyk',

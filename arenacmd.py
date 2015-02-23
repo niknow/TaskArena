@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-
+#! /usr/bin/python
 
 # TaskArena - Adding collaborative functionality to TaskWarrior
 # Copyright (C) 2015  Nikolai Nowaczyk
