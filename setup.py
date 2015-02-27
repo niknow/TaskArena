@@ -11,7 +11,7 @@ setup(
     author='Nikolai Nowaczyk',
     author_email='mail@nikno.de',
     license='GNU GPLv2',
-    url='https://github.com/niknow/TaskLegion',
+    url='https://github.com/niknow/TaskArena/tree/master/tarenalib',
     packages=find_packages(),
     install_requires=['tasklib==0.8.0']
 )
