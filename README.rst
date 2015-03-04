@@ -12,13 +12,13 @@ Installation
 
     python setup.py install
 
- This will install the necessary python library.
+This will install the necessary python library.
 
 * Download `arenacmd.py` and put it into your local `bin` folder. If you like, you can rename it to::
 
     mv arenacmd.py tarena
 
- In the following, we will asume that this has been done.
+In the following, we will asume that this has been done.
 
 * Now, you can check if the installation worked by typing::
 
@@ -38,7 +38,7 @@ Usage
 -------
 **Warning:** Before trying out TaskArena it is strongly suggested that you create a backup of your TaskWarrior database.
 
-The general syntax of can be read by typing::
+The general syntax of `tarena` can be read by typing::
 
     tarena -h
 
@@ -46,7 +46,7 @@ We will walk you through it in the following.
 
 Creating a new arena
 ~~~~~~~
-To start working on tasks collaboratively, you first have to create an arena, in which you can put them by::
+To start working on tasks collaboratively, you first have to create an arena, in which you can put them::
 
     tarena create
 
@@ -78,7 +78,7 @@ Here `<arena>` should be the name of your arena and `<filter>` can be any TaskWa
      1 cut the lawn
      2 tidy up cellar
 
-You can add the first one to your `housework` arena by::
+You can add the first one to your `housework` arena via::
 
     tarena add housework 1
 
@@ -88,7 +88,7 @@ If they are part of a project, i.e. if your task report looks like this::
      1 cut the lawn   housework
      2 tidy up cellar housework
 
-You can also add them by::
+You can also add them via::
 
     tarena add housework project:housework
 
@@ -97,7 +97,7 @@ The filter can be as complex as you like::
     tarena add housework project:housework +garden due.before:1month
 
 
-**Hint:** Technically, the installation of TaskArena adds some *User Defined Attributes (UDA)* to your TaskWarrior. After you have added a task to an arena you can see them by::
+**Hint:** Technically, the installation of TaskArena adds some *User Defined Attributes (UDA)* to your TaskWarrior. After you have added a task to an arena you can see them via::
 
     tarena 1 info
 
@@ -111,7 +111,7 @@ The UDAs `Arena` and `ArenaTaskID` are used by `tarena` to interact with TaskWar
 
 Managing tasks in an arena
 ~~~~~~~
-You can remove tasks from an in the same fashion. For instance::
+You can remove tasks from an arena in the same fashion. For instance::
 
     tarena remove remove 1
 
@@ -124,15 +124,15 @@ So far, everything we did happened in your local TaskWarrior database. To actual
 
     tarena sync <arena>
 
-So to synchronize your `housework`::
+So, to synchronize your `housework`::
 
     tarena sync housework
 
-A dialog will walk you through the synchronization. In the end, only the tasks belonging to your arena will be synchronized the the remote folder.
+A dialog will walk you through the synchronization. In the end, only the tasks belonging to your arena will be synchronized with the remote folder.
 
 Actually working together
 ~~~~~~~
-To actually work together, you have to give your collaborator access to your remote folder, for instance by sharing that folder via Dropbox. You collaborator has to create an arena with the same name and specify his local TaskWarrior folder as well as his remote folder in his Dropbox. In order for him to get your tasks he has to perform an ordinary sync::
+To actually work together, you have to give your collaborator access to your remote folder, for instance by sharing that folder via Dropbox. Your collaborator has to create an arena with the same name and specify his local TaskWarrior folder as well as his remote folder in his Dropbox. In order for him to get your tasks, he has to perform an ordinary sync::
 
     tarena sync houework
 
