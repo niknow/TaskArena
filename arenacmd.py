@@ -1,4 +1,5 @@
 #!/usr/bin/python
+
 # -*- coding: utf-8 -*-
 
 # TaskArena - Adding collaborative functionality to TaskWarrior
@@ -21,7 +22,7 @@
 
 import argparse
 import subprocess
-from tarenalib import *
+from tarenalib.arenalib import *
 
 
 def execute_command(command_args):
