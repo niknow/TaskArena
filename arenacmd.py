@@ -30,7 +30,4 @@ parser.add_argument("filter", nargs='?', default='', help="taskwarrior filter yo
 args = parser.parse_args()
 
 IO = IOManager()
-if args.command:
-    IO.process_command_args(args)
-else:
-    IO.send_message("No command supplied.")
+IO.process_command_args(args)

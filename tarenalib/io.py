@@ -25,10 +25,24 @@ import os
 
 
 class IOManager(object):
+
+    valid_commands = [
+        'install',
+        'uninstall',
+        'create',
+        'delete',
+        'list',
+        'add',
+        'remove',
+        'delete',
+        'sync',
+    ]
+
     def __init__(self, show_output=True, seplength=75):
         self.show_output = show_output
         self.seplength = seplength
         self.TaskEmperor = TaskEmperor()
+        self.configfile = os.path.expanduser("~") + "\\task_arena_config"
 
     @staticmethod
     def formatted_print(t):
@@ -55,66 +69,90 @@ class IOManager(object):
         p.communicate(input='y\n')
 
     def process_command_args(self, args):
-        configfile = os.path.expanduser("~") + "\\task_arena_config"
-        load_result = self.TaskEmperor.load(configfile)
+        if args.command in IOManager.valid_commands:
+            self.call_emperor()
+            eval('self.'+args.command+'(args)')
+        else:
+            self.send_message("Invalid command supplied.")
+
+    def call_emperor(self):
+        load_result = self.TaskEmperor.load(self.configfile)
         if load_result == 'loaded':
             self.send_message("Arenas loaded.")
         elif load_result == 'empty':
-            self.send_message("Warning: Config file " + configfile + " is empty or corrupt.")
+            self.send_message("Warning: Config file " + self.configfile + " is empty or corrupt.")
         elif load_result == 'new':
-            self.send_message("New arena config created at " + configfile)
-        if args.command == 'install':
-            for uda in uda_config_list:
-                IOManager.execute_command(['task', 'config', uda.keys()[0], uda[uda.keys()[0]]])
-            self.send_message("TaskArena installed.")
-        elif args.command == 'uninstall':
-            for uda in reversed(uda_config_list):
-                IOManager.execute_command(['task', 'config', uda.keys()[0]])
-            os.remove(configfile)
-            self.send_message("TaskArena uninstalled.")
-        elif args.command == 'create':
-            self.send_message("Creating new Arena...")
-            name = self.get_input('Enter a name: ')
-            ldata = self.get_input('Enter local data.location: ')
-            rdata = self.get_input('Enter remote data.location: ')
-            if self.TaskEmperor.create_arena(name, ldata, rdata):
-                self.send_message("Arena " + name + " created.")
-                self.TaskEmperor.save()
+            self.send_message("New arena config created at " + self.configfile)
+
+    def install(self, args):
+        for uda in uda_config_list:
+            IOManager.execute_command(['task', 'config', uda.keys()[0], uda[uda.keys()[0]]])
+        self.send_message("TaskArena installed.")
+
+    def uninstall(self, args):
+        for uda in reversed(uda_config_list):
+            IOManager.execute_command(['task', 'config', uda.keys()[0]])
+        os.remove(self.configfile)
+        self.send_message("TaskArena uninstalled.")
+
+    def create(self, args):
+        self.send_message("Creating new Arena...")
+        name = self.get_input('Enter a name: ')
+        ldata = self.get_input('Enter local data.location: ')
+        rdata = self.get_input('Enter remote data.location: ')
+        if self.TaskEmperor.create_arena(name, ldata, rdata):
+            self.send_message("Arena " + name + " created.")
+            self.TaskEmperor.save()
+        else:
+            self.send_message("Arena " + name + " already exists!")
+
+    def list(self, args):
+        if self.TaskEmperor.arenas:
+            self.send_message("The following arenas are available:", 1, 1)
+            for arena in self.TaskEmperor.arenas:
+                self.send_message("arena : " + arena.name)
+                self.send_message("local : " + arena.local_data)
+                self.send_message("remote: " + arena.remote_data)
+
+    def get_arena(self, args):
+        if args.arena:
+            arena = self.TaskEmperor.find(args.arena)
+            if arena:
+                return arena
             else:
-                self.send_message("Arena " + name + " already exists!")
-        elif args.command == 'list':
-            if self.TaskEmperor.arenas:
-                self.send_message("The following arenas are available:", 1, 1)
-                for arena in self.TaskEmperor.arenas:
-                    self.send_message("arena : " + arena.name)
-                    self.send_message("local : " + arena.local_data)
-                    self.send_message("remote: " + arena.remote_data)
-        elif args.command in ['add', 'remove', 'delete', 'sync']:
-            if args.arena:
-                arena = self.TaskEmperor.find(args.arena)
-                if arena:
-                    if args.command == 'add':
-                        arena.add(args.filter)
-                        self.send_message("Tasks added.")
-                    elif args.command == 'remove':
-                        arena.remove(args.filter)
-                        self.send_message("Tasks removed from " + arena.name + " .")
-                    elif args.command == 'delete':
-                        self.TaskEmperor.delete_arena(arena)
-                        self.TaskEmperor.save()
-                        self.send_message("Arena " + arena.name + " deleted.")
-                    elif args.command == 'sync':
-                        sm = SyncManager(arena)
-                        sm.generate_synclist()
-                        sm.suggest_conflict_resolution()
-                        sm.let_user_check_and_modify_synclist()
-                        if sm.synclist:
-                            sm.carry_out_sync()
-                            self.send_message("Sync complete.", 1, 1)
-                else:
-                    self.send_message("Arena " + args.arena + " not found.")
-            else:
-                self.send_message("You must supply an ArenaTaskID.")
+                self.send_message("Arena " + args.arena + " not found.")
+        else:
+            self.send_message("You must supply an ArenaTaskID.")
+
+    def add(self, args):
+        arena = self.get_arena(args)
+        if arena:
+            arena.add(args.filter)
+            self.send_message("Tasks added.")
+
+    def remove(self, args):
+        arena = self.get_arena(args)
+        if arena:
+            arena.remove(args.filter)
+            self.send_message("Tasks removed from " + arena.name + " .")
+
+    def delete(self, args):
+        arena = self.get_arena(args)
+        if arena:
+            self.TaskEmperor.delete_arena(arena)
+            self.TaskEmperor.save()
+            self.send_message("Arena " + arena.name + " deleted.")
+
+    def sync(self, args):
+        arena = self.get_arena(args)
+        if arena:
+            sm = SyncManager(arena)
+            sm.generate_synclist()
+            sm.suggest_conflict_resolution()
+            sm.let_user_check_and_modify_synclist()
+            if sm.synclist:
+                sm.carry_out_sync()
+                self.send_message("Sync complete.", 1, 1)
 
     def send_message(self, msg, pre_blanks=0, post_blanks=0):
         if self.show_output:
