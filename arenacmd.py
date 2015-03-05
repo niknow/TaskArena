@@ -21,7 +21,7 @@
 
 
 import argparse
-from tarenalib.arenalib import IOManager
+from tarenalib.io import IOManager
 
 parser = argparse.ArgumentParser()
 parser.add_argument("command", help="command you want to issue")
@@ -30,5 +30,7 @@ parser.add_argument("filter", nargs='?', default='', help="taskwarrior filter yo
 args = parser.parse_args()
 
 IO = IOManager()
-IO.process_commands(args)
-
+if args.command:
+    IO.process_command_args(args)
+else:
+    IO.send_message("No command supplied.")

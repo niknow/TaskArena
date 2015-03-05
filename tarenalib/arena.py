@@ -23,7 +23,6 @@ import json
 import uuid
 import tasklib.task as tlib
 import os.path
-import subprocess
 
 uda_config_list = [
     {'uda.Arena.type': 'string'},
@@ -165,7 +164,6 @@ class TaskArena(object):
         self.name = arena_name
         self.local_data = ldata
         self.remote_data = rdata
-        self.SyncManager = SyncManager(self)
 
     def get_local_data(self):
         return self._local_data
@@ -213,12 +211,6 @@ class TaskArena(object):
             ta_task.remove()
             ta_task.save()
         return tasks
-
-    def sync(self):
-        self.SyncManager.generate_synclist()
-        self.SyncManager.suggest_conflict_resolution()
-        self.SyncManager.let_user_check_and_modify_synclist()
-        self.SyncManager.carry_out_sync()
 
 
 class TaskEmperor(object):

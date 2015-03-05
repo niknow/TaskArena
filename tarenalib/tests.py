@@ -22,7 +22,8 @@ import tempfile
 import unittest
 import shutil
 import os
-from arenalib import TaskEmperor, SyncElement, SharedTask, SyncManager, EnhancedTaskWarrior
+from arena import TaskEmperor, SharedTask, EnhancedTaskWarrior
+from sync import SyncElement, SyncManager
 from tasklib.task import Task
 
 
@@ -139,10 +140,11 @@ class TaskArenaTest(unittest.TestCase):
         rtask.ArenaTaskID = 1
         ltask.save()
         rtask.save()
-        arena.SyncManager.generate_synclist()
-        num_uploads = len([e for e in arena.SyncManager.synclist if e.suggestion == 'UPLOAD'])
-        num_downloads = len([e for e in arena.SyncManager.synclist if e.suggestion == 'DOWNLOAD'])
-        num_conflicts = len([e for e in arena.SyncManager.synclist if e.suggestion == 'CONFLICT'])
+        sm = SyncManager(arena)
+        sm.generate_synclist()
+        num_uploads = len([e for e in sm.synclist if e.suggestion == 'UPLOAD'])
+        num_downloads = len([e for e in sm.synclist if e.suggestion == 'DOWNLOAD'])
+        num_conflicts = len([e for e in sm.synclist if e.suggestion == 'CONFLICT'])
         self.assertEqual(num_uploads, 1)
         self.assertEqual(num_downloads, 1)
         self.assertEqual(num_conflicts, 1)

@@ -100,8 +100,6 @@ class SyncManager(object):
                     elem.local_task = self.arena.tw_local.add_task(elem.remote_task)
                     elem.local_task.ArenaTaskID = elem.remote_task.ArenaTaskID
                 elem.local_task.save()
-        if self.synclist:
-            self.arena.IOManager.send_message("Sync complete.", 1, 1)
 
     def __repr__(self):
         return str({'arena:': self.arena.__str__(),
@@ -149,4 +147,3 @@ class SyncElement(object):
                     'suggestion:': self.suggestion,
                     'action:': self.action,
                     'fields:': self.fields})
-
