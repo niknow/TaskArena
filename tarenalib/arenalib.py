@@ -23,7 +23,7 @@ import json
 import uuid
 import tasklib.task as tlib
 import os.path
-
+import subprocess
 
 uda_config_list = [
     {'uda.Arena.type': 'string'},
@@ -131,8 +131,9 @@ class SharedTask(object):
     def save(self):
         try:
             self.tw_task.save()
+            return 1
         except:
-            self.Arena.IOManager.send_message("Saving failed.")
+            return 0
 
 
 class EnhancedTaskWarrior(object):
@@ -156,7 +157,7 @@ class EnhancedTaskWarrior(object):
 class TaskArena(object):
     """ A project that is shared with others. """
 
-    def __init__(self, arena_name='', ldata='/', rdata='/', iomanager=None):
+    def __init__(self, arena_name='', ldata='/', rdata='/'):
         self._local_data = None
         self._remote_data = None
         self.tw_local = None
@@ -164,7 +165,6 @@ class TaskArena(object):
         self.name = arena_name
         self.local_data = ldata
         self.remote_data = rdata
-        self.IOManager = iomanager
         self.SyncManager = SyncManager(self)
 
     def get_local_data(self):
@@ -202,15 +202,17 @@ class TaskArena(object):
         return str(self.__repr__())
 
     def add(self, pattern):
-        for ta_task in self.tw_local.tasks(pattern):
+        tasks = self.tw_local.tasks(pattern)
+        for ta_task in tasks:
             ta_task.save()
-        self.IOManager.send_message("Tasks added.")
+        return tasks
 
     def remove(self, pattern):
-        for ta_task in self.tw_local.tasks([pattern, 'Arena:' + self.name]):
+        tasks = self.tw_local.tasks([pattern, 'Arena:' + self.name])
+        for ta_task in tasks:
             ta_task.remove()
             ta_task.save()
-        self.IOManager.send_message("Tasks removed from " + self.name + " .")
+        return tasks
 
     def sync(self):
         self.SyncManager.generate_synclist()
@@ -305,7 +307,7 @@ class SyncManager(object):
 
     def __repr__(self):
         return str({'arena:': self.arena.__str__(),
-                'synclist:': [e.__str__() for e in self.synclist]})
+                    'synclist:': [e.__str__() for e in self.synclist]})
 
     def __str__(self):
         return str({'arena:': self.arena.__str__(),
@@ -345,16 +347,17 @@ class SyncElement(object):
 
     def __str__(self):
         return str({'local_task': self.local_task,
-                'remote_task:': self.remote_task,
-                'suggestion:': self.suggestion,
-                'action:': self.action,
-                'fields:': self.fields})
+                    'remote_task:': self.remote_task,
+                    'suggestion:': self.suggestion,
+                    'action:': self.action,
+                    'fields:': self.fields})
 
 
 class IOManager(object):
-    def __init__(self, show_output=True, seplength=75):
+    def __init__(self, show_output=True, seplength=75, te=None):
         self.show_output = show_output
         self.seplength = seplength
+        self.TaskEmperor = te
 
     @staticmethod
     def formatted_print(t):
@@ -363,7 +366,7 @@ class IOManager(object):
     @staticmethod
     def newlines(num):
         if num:
-            print("\n"*(num-1))
+            print("\n" * (num - 1))
 
     @staticmethod
     def get_input(msg, pre_blanks=0, post_blanks=0):
@@ -371,6 +374,63 @@ class IOManager(object):
         data = raw_input(msg)
         print("\n" * post_blanks)
         return data
+
+    @staticmethod
+    def execute_command(command_args):
+        p = subprocess.Popen(command_args,
+                             stdin=subprocess.PIPE,
+                             stdout=subprocess.PIPE,
+                             stderr=subprocess.PIPE)
+        p.communicate(input='y\n')
+
+    def process_commands(self, args):
+        if args.command:
+            configfile = os.path.expanduser("~") + "\\task_arena_config"
+            self.TaskEmperor = TaskEmperor(configfile)
+            if args.command == 'install':
+                for uda in uda_config_list:
+                    IOManager.execute_command(['task', 'config', uda.keys()[0], uda[uda.keys()[0]]])
+                self.send_message("TaskArena installed.")
+            elif args.command == 'uninstall':
+                for uda in reversed(uda_config_list):
+                    IOManager.execute_command(['task', 'config', uda.keys()[0]])
+                os.remove(configfile)
+                self.send_message("TaskArena uninstalled.")
+            elif args.command == 'create':
+                self.send_message("Creating new Arena...")
+                name = self.get_input('Enter a name: ')
+                ldata = self.get_input('Enter local data.location: ')
+                rdata = self.get_input('Enter remote data.location: ')
+                self.TaskEmperor.create_arena(name, ldata, rdata)
+                self.TaskEmperor.save()
+            elif args.command == 'list':
+                if self.TaskEmperor.arenas:
+                    self.send_message("The following arenas are available:", 1, 1)
+                    for arena in self.TaskEmperor.arenas:
+                        self.send_message("arena : " + arena.name)
+                        self.send_message("local : " + arena.local_data)
+                        self.send_message("remote: " + arena.remote_data)
+            elif args.command in ['add', 'remove', 'delete', 'sync']:
+                if args.arena:
+                    arena = self.TaskEmperor.find(args.arena)
+                    if arena:
+                        if args.command == 'add':
+                            arena.add(args.filter)
+                            self.send_message("Tasks added.")
+                        elif args.command == 'remove':
+                            arena.remove(args.filter)
+                            self.send_message("Tasks removed from " + arena.name + " .")
+                        elif args.command == 'delete':
+                            self.TaskEmperor.delete_arena(arena)
+                        elif args.command == 'sync':
+                            arena.sync()
+                    else:
+                        self.send_message("Arena " + args.arena + " not found.")
+                else:
+                    self.send_message("You must supply an ArenaTaskID.")
+        else:
+            self.send_message("No command supplied.")
+
 
     def send_message(self, msg, pre_blanks=0, post_blanks=0):
         if self.show_output:

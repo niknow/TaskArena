@@ -21,17 +21,7 @@
 
 
 import argparse
-import subprocess
-from tarenalib.arenalib import *
-
-
-def execute_command(command_args):
-    p = subprocess.Popen(command_args,
-                         stdin=subprocess.PIPE,
-                         stdout=subprocess.PIPE,
-                         stderr=subprocess.PIPE)
-    p.communicate(input='y\n')
-
+from tarenalib.arenalib import IOManager
 
 parser = argparse.ArgumentParser()
 parser.add_argument("command", help="command you want to issue")
@@ -39,50 +29,6 @@ parser.add_argument("arena", nargs='?', default='', help="arena you want to issu
 parser.add_argument("filter", nargs='?', default='', help="taskwarrior filter you want to restrict your command to")
 args = parser.parse_args()
 
-TE = TaskEmperor()
-io = TE.IOManager
+IO = IOManager()
+IO.process_commands(args)
 
-if args.command:
-    configfile = os.path.expanduser("~") + "\\task_arena_config"
-    TE.configfile = configfile
-    if args.command == 'install':
-        for uda in uda_config_list:
-            execute_command(['task', 'config', uda.keys()[0], uda[uda.keys()[0]]])
-        io.send_message("TaskArena installed.")
-    elif args.command == 'uninstall':
-        for uda in reversed(uda_config_list):
-            execute_command(['task', 'config', uda.keys()[0]])
-        os.remove(configfile)
-        io.send_message("TaskArena uninstalled.")
-    elif args.command == 'create':
-        io.send_message("Creating new Arena...")
-        name = io.get_input('Enter a name: ')
-        ldata = io.get_input('Enter local data.location: ')
-        rdata = io.get_input('Enter remote data.location: ')
-        TE.create_arena(name, ldata, rdata)
-        TE.save()
-    elif args.command == 'list':
-        if TE.arenas:
-            io.send_message("The following arenas are available:", 1, 1)
-            for arena in TE.arenas:
-                io.send_message("arena : " + arena.name)
-                io.send_message("local : " + arena.local_data)
-                io.send_message("remote: " + arena.remote_data)
-    elif args.command in ['add', 'remove', 'delete', 'sync']:
-        if args.arena:
-            arena = TE.find(args.arena)
-            if arena:
-                if args.command == 'add':
-                    arena.add(args.filter)
-                elif args.command == 'remove':
-                    arena.remove(args.filter)
-                elif args.command == 'delete':
-                    TE.delete_arena(arena)
-                elif args.command == 'sync':
-                    arena.sync()
-            else:
-                io.send_message("Arena " + args.arena + " not found.")
-        else:
-            io.send_message("You must supply an ArenaTaskID.")
-else:
-    io.send_message("No command supplied.")
