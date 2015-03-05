@@ -33,8 +33,10 @@ class TaskArenaTest(unittest.TestCase):
         self.RemoteDir = tempfile.mkdtemp(dir='.')
         self.ConfigFileLocal = tempfile.mkstemp(dir='.')
         self.ConfigFileRemote = tempfile.mkstemp(dir='.')
-        self.TE_local = TaskEmperor(self.ConfigFileLocal[1], False)
-        self.TE_remote = TaskEmperor(self.ConfigFileRemote[1], False)
+        self.TE_local = TaskEmperor()
+        self.TE_local.load(self.ConfigFileLocal[1])
+        self.TE_remote = TaskEmperor()
+        self.TE_remote.load(self.ConfigFileRemote[1])
         self.arena_name = "RefurbishHouse"
 
     def tearDown(self):

@@ -221,6 +221,65 @@ class TaskArena(object):
         self.SyncManager.carry_out_sync()
 
 
+class TaskEmperor(object):
+    """ A class to handle all your TaskArenas """
+
+    def __init__(self):
+        self.arenas = []
+        self.configfile = None
+
+    def load(self, configfile):
+        self.configfile = configfile
+        if os.path.isfile(self.configfile):
+            f = open(self.configfile)
+            try:
+                self.json = json.load(f)
+                return 'loaded'
+            except:
+                return 'empty'
+        else:
+            open(self.configfile, 'w+')
+            return 'new'
+
+    def save(self):
+        f = open(self.configfile, 'w+')
+        json.dump(self.json, f)
+
+    def get_json(self):
+        return {'arenas': [p.json for p in self.arenas]}
+
+    def set_json(self, data):
+        self.arenas = []
+        for json_project in data['arenas']:
+            arena = TaskArena()
+            arena.json = json_project
+            self.arenas.append(arena)
+
+    json = property(get_json, set_json)
+
+    def __repr__(self):
+        return {'configfile': self.configfile,
+                'arenas': [p.__repr__() for p in self.arenas]}
+
+    def __str__(self):
+        return str(self.__repr__())
+
+    def create_arena(self, arena_id, ldata, rdata):
+        if arena_id not in [p.name for p in self.arenas]:
+            arena = TaskArena(arena_id, ldata, rdata)
+            self.arenas.append(arena)
+            return arena
+
+    def delete_arena(self, arena):
+        arena.remove('')
+        self.arenas.remove(arena)
+
+    def find(self, arena_name):
+        for arena in self.arenas:
+            if arena.name == arena_name:
+                return arena
+
+
 class SyncManager(object):
     def __init__(self, arena):
         self.arena = arena
@@ -354,10 +413,10 @@ class SyncElement(object):
 
 
 class IOManager(object):
-    def __init__(self, show_output=True, seplength=75, te=None):
+    def __init__(self, show_output=True, seplength=75):
         self.show_output = show_output
         self.seplength = seplength
-        self.TaskEmperor = te
+        self.TaskEmperor = TaskEmperor()
 
     @staticmethod
     def formatted_print(t):
@@ -386,7 +445,13 @@ class IOManager(object):
     def process_commands(self, args):
         if args.command:
             configfile = os.path.expanduser("~") + "\\task_arena_config"
-            self.TaskEmperor = TaskEmperor(configfile)
+            load_result = self.TaskEmperor.load(configfile)
+            if load_result == 'loaded':
+                self.send_message("Arenas loaded.")
+            elif load_result == 'empty':
+                self.send_message("Warning: Config file " + configfile + " is empty or corrupt.")
+            elif load_result == 'new':
+                self.send_message("New arena config created at " + configfile)
             if args.command == 'install':
                 for uda in uda_config_list:
                     IOManager.execute_command(['task', 'config', uda.keys()[0], uda[uda.keys()[0]]])
@@ -401,8 +466,11 @@ class IOManager(object):
                 name = self.get_input('Enter a name: ')
                 ldata = self.get_input('Enter local data.location: ')
                 rdata = self.get_input('Enter remote data.location: ')
-                self.TaskEmperor.create_arena(name, ldata, rdata)
-                self.TaskEmperor.save()
+                if self.TaskEmperor.create_arena(name, ldata, rdata):
+                    self.send_message("Arena " + name + " created.")
+                    self.TaskEmperor.save()
+                else:
+                    self.send_message("Arena " + name + " already exists!")
             elif args.command == 'list':
                 if self.TaskEmperor.arenas:
                     self.send_message("The following arenas are available:", 1, 1)
@@ -422,6 +490,8 @@ class IOManager(object):
                             self.send_message("Tasks removed from " + arena.name + " .")
                         elif args.command == 'delete':
                             self.TaskEmperor.delete_arena(arena)
+                            self.TaskEmperor.save()
+                            self.send_message("Arena " + arena.name + " deleted.")
                         elif args.command == 'sync':
                             arena.sync()
                     else:
@@ -430,7 +500,6 @@ class IOManager(object):
                     self.send_message("You must supply an ArenaTaskID.")
         else:
             self.send_message("No command supplied.")
-
 
     def send_message(self, msg, pre_blanks=0, post_blanks=0):
         if self.show_output:
@@ -480,78 +549,3 @@ class IOManager(object):
         return result
 
 
-class TaskEmperor(object):
-    """ A class to handle all your TaskArenas """
-
-    def __init__(self, configfile='', output=True):
-        self.arenas = []
-        self.IOManager = IOManager(output)
-        self.configfile = configfile
-
-    def _get_configfile(self):
-        return self._configfile
-
-    def _set_configfile(self, value):
-        if value:
-            self._configfile = value
-            self.load()
-
-    configfile = property(_get_configfile, _set_configfile)
-
-    def load(self):
-        if os.path.isfile(self.configfile):
-            f = open(self.configfile)
-            try:
-                self.json = json.load(f)
-                self.IOManager.send_message("Arenas loaded.")
-            except:
-                self.IOManager.send_message("Warning: Config file " + self.configfile + " is empty or corrupt.")
-        else:
-            open(self.configfile, 'w+')
-            self.IOManager.send_message("New arena config created at " + self.configfile)
-
-    def save(self):
-        f = open(self.configfile, 'w+')
-        json.dump(self.json, f)
-        self.IOManager.send_message("TaskEmperor saved.")
-
-    def get_json(self):
-        return {'arenas': [p.json for p in self.arenas]}
-
-    def set_json(self, data):
-        self.arenas = []
-        for json_project in data['arenas']:
-            arena = TaskArena()
-            arena.json = json_project
-            arena.IOManager = self.IOManager
-            self.arenas.append(arena)
-
-    json = property(get_json, set_json)
-
-    def __repr__(self):
-        return {'configfile': self.configfile,
-                'arenas': [p.__repr__() for p in self.arenas]}
-
-    def __str__(self):
-        return str(self.__repr__())
-
-    def create_arena(self, arena_id, ldata, rdata):
-        arena = None
-        if arena_id in [p.name for p in self.arenas]:
-            self.IOManager.send_message("Arena " + arena_id + " already exists!")
-        else:
-            arena = TaskArena(arena_id, ldata, rdata, self.IOManager)
-            self.arenas.append(arena)
-            self.IOManager.send_message("Arena " + arena.name + " created.")
-        return arena
-
-    def delete_arena(self, arena):
-        arena.remove('')
-        self.arenas.remove(arena)
-        self.save()
-        self.IOManager.send_message("Arena " + arena.name + " deleted.")
-
-    def find(self, arena_name):
-        for arena in self.arenas:
-            if arena.name == arena_name:
-                return arena
