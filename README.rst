@@ -53,7 +53,7 @@ To start working on tasks collaboratively, you first have to create an arena, in
 You will be asked for a name for your arena. The name should be the common theme of the tasks you want to work on together, for instance the name of a project.
 Next you will be asked for a local and a remote folder. The local folder should be the path of your usual local TaskWarrior database. The remote folder should be a new folder that you can share with your collaborators, for instance a folder in your Dropbox.
 
-**Warning:** By giving `tarena` the path to your local TaskWarrior database, you automatically give it read and write permissions to this database. Since this project is in an experimental state, we again strongly advise you to take a backup of this folder first.
+**Warning:** By giving `tarena` the path to your local TaskWarrior database, you automatically give it read and write permissions to this database. Since this project is in an experimental state, we again strongly advise you to make a backup of this folder first.
 
 Managing arenas
 ~~~~~~~
@@ -111,9 +111,13 @@ The UDAs `Arena` and `ArenaTaskID` are used by `tarena` to interact with TaskWar
 
 Managing tasks in an arena
 ~~~~~~~
+You can see a list of all tasks in an arena by:
+	
+	task Arena:housework
+	
 You can remove tasks from an arena in the same fashion. For instance::
 
-    tarena remove remove 1
+    tarena remove housework 1
 
 would remove the task with ID 1.
 
@@ -149,7 +153,8 @@ To remove TaskArena one has to undo all the steps of the installation in reverse
 
     rm tarena
 
-* Uninstall the python library via::
+* Uninstall the python library by deleting all its files. You can get a list of these via::
 
-    python setup.py install
+    python setup.py install --record files.txt
+	cat files.txt
 
