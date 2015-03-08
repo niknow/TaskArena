@@ -113,7 +113,7 @@ Managing tasks in an arena
 ~~~~~~~
 You can remove tasks from an arena in the same fashion. For instance::
 
-    tarena remove remove 1
+    tarena remove housework 1
 
 would remove the task with ID 1.
 
