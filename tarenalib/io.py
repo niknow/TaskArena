@@ -55,9 +55,9 @@ class IOManager(object):
 
     @staticmethod
     def get_input(msg, pre_blanks=0, post_blanks=0):
-        print("\n" * pre_blanks)
+        IOManager.newlines(pre_blanks)
         data = raw_input(msg)
-        print("\n" * post_blanks)
+        IOManager.newlines(post_blanks)
         return data
 
     @staticmethod
@@ -67,6 +67,15 @@ class IOManager(object):
                              stdout=subprocess.PIPE,
                              stderr=subprocess.PIPE)
         p.communicate(input='y\n')
+
+    def send_message(self, msg, pre_blanks=0, post_blanks=0):
+        if self.show_output:
+            IOManager.newlines(pre_blanks)
+            print(msg)
+            IOManager.newlines(post_blanks)
+
+    def print_separator(self):
+        self.send_message("-" * self.seplength)
 
     def process_command_args(self, args):
         if args.command in IOManager.valid_commands:
@@ -96,7 +105,7 @@ class IOManager(object):
         self.send_message("TaskArena uninstalled.")
 
     def create(self, args):
-        self.send_message("Creating new Arena...")
+        self.send_message("Creating new Arena...", 1, 1)
         name = self.get_input('Enter a name: ')
         ldata = self.get_input('Enter local data.location: ')
         rdata = self.get_input('Enter remote data.location: ')
@@ -108,11 +117,11 @@ class IOManager(object):
 
     def list(self, args):
         if self.TaskEmperor.arenas:
-            self.send_message("The following arenas are available:", 1, 1)
+            self.send_message("The following arenas are available:", 1)
             for arena in self.TaskEmperor.arenas:
-                self.send_message("arena : " + arena.name)
+                self.send_message("arena : " + arena.name, 1)
                 self.send_message("local : " + arena.local_data)
-                self.send_message("remote: " + arena.remote_data)
+                self.send_message("remote: " + arena.remote_data, 0, 1)
 
     def get_arena(self, args):
         if args.arena:
@@ -153,15 +162,6 @@ class IOManager(object):
             if sm.synclist:
                 sm.carry_out_sync()
                 self.send_message("Sync complete.", 1, 1)
-
-    def send_message(self, msg, pre_blanks=0, post_blanks=0):
-        if self.show_output:
-            IOManager.newlines(pre_blanks)
-            print(msg)
-            IOManager.newlines(post_blanks)
-
-    def print_separator(self):
-        self.send_message("-" * self.seplength)
 
     def sync_preview(self, synclist):
         self.print_separator()
