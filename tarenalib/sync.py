@@ -29,8 +29,8 @@ class SyncManager(object):
         return [e for e in self.synclist if e.suggestion != 'SKIP']
 
     def generate_synclist(self):
-        local_tasks = self.arena.tw_local.tasks('')
-        remote_tasks = self.arena.tw_remote.tasks('')
+        local_tasks = self.arena.get_local_tasks()
+        remote_tasks = self.arena.get_remote_tasks()
         for ltask in local_tasks:
             rtask = next((t for t in remote_tasks if t == ltask), None)
             if rtask:
@@ -54,35 +54,6 @@ class SyncManager(object):
             else:
                 simplified_synclist.append(e)
         self.synclist = simplified_synclist
-
-    def let_user_check_and_modify_synclist(self):
-        if self.synclist:
-            self.arena.IOManager.send_message("Suggesting the following sync operations on " + self.arena.name + "...",
-                                              1, 2)
-            sync_command = self.arena.IOManager.sync_preview(self.synclist)
-            if sync_command == 'a':
-                for elem in self.synclist:
-                    elem.action = elem.suggestion
-            elif sync_command == 'm':
-                self.arena.IOManager.send_message("Starting manual sync...", 1, 1)
-                for elem in self.synclist:
-                    self.arena.IOManager.print_separator()
-                    sc = self.arena.IOManager.sync_choice(elem)
-                    if sc == 'u':
-                        elem.action = 'UPLOAD'
-                        self.arena.IOManager.send_message("Task uploaded.", 1)
-                    elif sc == 'd':
-                        elem.action = 'DOWNLOAD'
-                        self.arena.IOManager.send_message("Task downloaded.", 1)
-                    elif sc == 's':
-                        elem.action = 'SKIP'
-                        self.arena.IOManager.send_message("Task skipped.", 1)
-                    elif sc == 'c':
-                        self.arena.IOManager.send_message("Sync canceled.", 0, 1)
-                        self.synclist = []
-                        break
-        else:
-            self.arena.IOManager.send_message("Arena " + self.arena.name + " is in sync.")
 
     def carry_out_sync(self):
         for elem in self.synclist:

@@ -8,27 +8,20 @@ A tool adding collaborative functionality to TaskWarrior.
 Installation
 -------
 
-* Download `setup.py` and execute::
+* Clone this repo::
 
+    git clone https://github.com/niknow/TaskArena.git
+
+* Switch into TaskArena and install the python library::
+
+    cd TaskArena
     python setup.py install
 
-This will install the necessary python library.
+* Move the `arenacmd.py` into your local `bin` folder and rename it to `tarena`::
 
-* Download `arenacmd.py` and put it into your local `bin` folder. If you like, you can rename it to::
+    mv arenacmd.py usr/bin/tarena
 
-    mv arenacmd.py tarena
-
-In the following, we will asume that this has been done.
-
-* Now, you can check if the installation worked by typing::
-
-    tarena
-
-into the console. You should get something like::
-
-    usage: tarena [-h] command [arena] [filter]
-
-* TaskArena can install itself by::
+* Now, TaskArena can install itself by::
 
     tarena install
 
@@ -111,7 +104,7 @@ The UDAs `Arena` and `ArenaTaskID` are used by `tarena` to interact with TaskWar
 
 Managing tasks in an arena
 ~~~~~~~
-You can see a list of all tasks in an arena by:
+You can see a list of all tasks in an arena by::
 
     task Arena:housework
 
@@ -157,5 +150,5 @@ To remove TaskArena one has to undo all the steps of the installation in reverse
 * Uninstall the python library by deleting all its files. You can get a list of these via::
 
     python setup.py install --record files.txt
-	cat files.txt
+    cat files.txt
 

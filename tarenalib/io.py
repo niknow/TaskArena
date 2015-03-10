@@ -46,7 +46,7 @@ class IOManager(object):
 
     @staticmethod
     def formatted_print(t):
-        print("{0:6}   {1:25}   {2:20}   {3:10}\n".format(t[0][0:6], t[1][0:25], t[2][0:20], t[3][0:10]))
+        print(u'{0:6}   {1:25}   {2:20}   {3:10}\n'.format(t[0][0:6], t[1][0:25], t[2][0:20], t[3][0:10]))
 
     @staticmethod
     def newlines(num):
@@ -136,7 +136,7 @@ class IOManager(object):
     def add(self, args):
         arena = self.get_arena(args)
         if arena:
-            arena.add(args.filter)
+            arena.add(args.filter.split())
             self.send_message("Tasks added.")
 
     def remove(self, args):
@@ -158,7 +158,7 @@ class IOManager(object):
             sm = SyncManager(arena)
             sm.generate_synclist()
             sm.suggest_conflict_resolution()
-            sm.let_user_check_and_modify_synclist()
+            sm.synclist = self.let_user_check_and_modify_synclist(sm.synclist, arena)
             if sm.synclist:
                 sm.carry_out_sync()
                 self.send_message("Sync complete.", 1, 1)
@@ -200,3 +200,32 @@ class IOManager(object):
             self.send_message("This task does not yet exist on local.", 1)
             result = IOManager.get_input("Do you want to (d)ownload, (s)kip or (c)ancel sync? (d/s/c) ", 1)
         return result
+
+    def let_user_check_and_modify_synclist(self, synclist, arena):
+        if synclist:
+            self.send_message("Suggesting the following sync operations on " + arena.name + "...", 1, 2)
+            sync_command = self.sync_preview(synclist)
+            if sync_command == 'a':
+                for elem in synclist:
+                    elem.action = elem.suggestion
+            elif sync_command == 'm':
+                self.send_message("Starting manual sync...", 1, 1)
+                for elem in synclist:
+                    self.print_separator()
+                    sc = self.sync_choice(elem)
+                    if sc == 'u':
+                        elem.action = 'UPLOAD'
+                        self.send_message("Task will be uploaded.", 1)
+                    elif sc == 'd':
+                        elem.action = 'DOWNLOAD'
+                        self.send_message("Task will be downloaded.", 1)
+                    elif sc == 's':
+                        elem.action = 'SKIP'
+                        self.send_message("Task skipped.", 1)
+                    elif sc == 'c':
+                        self.send_message("Sync canceled.", 0, 1)
+                        synclist = []
+                        break
+            return synclist
+        else:
+            self.send_message("Arena " + arena.name + " is in sync.")

@@ -212,6 +212,11 @@ class TaskArena(object):
             ta_task.save()
         return tasks
 
+    def get_local_tasks(self):
+        return self.tw_local.tasks(['Arena:' + self.name])
+
+    def get_remote_tasks(self):
+        return self.tw_remote.tasks(['Arena:' + self.name])
 
 class TaskEmperor(object):
     """ A class to handle all your TaskArenas """
