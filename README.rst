@@ -99,7 +99,7 @@ The filter can be as complex as you like::
 
 **Hint:** Technically, the installation of TaskArena adds some *User Defined Attributes (UDA)* to your TaskWarrior. After you have added a task to an arena you can see them via::
 
-    tarena 1 info
+    task 1 info
 
 assuming that the task with ID 1 has been added. TaskWarrior will display all information it has on the task and (among other things)::
 
@@ -112,9 +112,10 @@ The UDAs `Arena` and `ArenaTaskID` are used by `tarena` to interact with TaskWar
 Managing tasks in an arena
 ~~~~~~~
 You can see a list of all tasks in an arena by:
-	
-	task Arena:housework
-	
+
+    task Arena:housework
+
+
 You can remove tasks from an arena in the same fashion. For instance::
 
     tarena remove housework 1
