@@ -23,7 +23,8 @@
 import argparse
 from tarenalib.io import IOManager
 
-parser = argparse.ArgumentParser()
+parser = argparse.ArgumentParser(description='Adding collaborative functionality to TaskWarrior.',
+                                 epilog='Issue the cmdlist command for a complete list of all possible commands.')
 parser.add_argument("command", help="command you want to issue")
 parser.add_argument("arena", nargs='?', default='', help="arena you want to issue commands in")
 parser.add_argument("filter", nargs='?', default='', help="taskwarrior filter you want to restrict your command to")

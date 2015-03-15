@@ -218,6 +218,7 @@ class TaskArena(object):
     def get_remote_tasks(self):
         return self.tw_remote.tasks(['Arena:' + self.name])
 
+
 class TaskEmperor(object):
     """ A class to handle all your TaskArenas """
 

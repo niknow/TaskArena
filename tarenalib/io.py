@@ -24,22 +24,47 @@ import subprocess
 import os
 
 
-class IOManager(object):
+class TaskArenaCommand(object):
+    def __init__(self, command='', args=True, helptext=''):
+        self.command = command
+        self.args = args
+        self.helptext = helptext
 
+    def function_string(self):
+        if self.args:
+            return 'self._tarena_' + self.command + '(args)'
+        else:
+            return 'self._tarena_' + self.command + '()'
+
+
+class TaskArenaCommandManager(object):
     valid_commands = [
-        'install',
-        'uninstall',
-        'create',
-        'delete',
-        'list',
-        'add',
-        'remove',
-        'delete',
-        'sync',
-        'tlocal',
-        'tremote',
+        TaskArenaCommand('install', False, 'installs TaskArena'),
+        TaskArenaCommand('uninstall', False, 'uninstalls TaskArena'),
+        TaskArenaCommand('create', False, 'creates a new arena'),
+        TaskArenaCommand('delete', True, 'deletes an arena'),
+        TaskArenaCommand('list', False, 'lists all arenas'),
+        TaskArenaCommand('add', True, 'adds a task to an arena'),
+        TaskArenaCommand('remove', True, 'removes a task from an'),
+        TaskArenaCommand('local', True, 'lists all local task of an arena'),
+        TaskArenaCommand('remote', True, 'lists all remote tasks of an arena'),
+        TaskArenaCommand('sync', True, 'syncs an arena'),
+        TaskArenaCommand('cmdlist', False, 'creates a list of all commands'),
     ]
 
+    @staticmethod
+    def command_list():
+        return [c.command for c in TaskArenaCommandManager.valid_commands]
+
+    @staticmethod
+    def command_dict():
+        d = {}
+        for c in TaskArenaCommandManager.valid_commands:
+            d[c.command] = c.function_string()
+        return d
+
+
+class IOManager(object):
     def __init__(self, show_output=True, seplength=75):
         self.show_output = show_output
         self.seplength = seplength
@@ -80,9 +105,9 @@ class IOManager(object):
         self.send_message("-" * self.seplength)
 
     def process_command_args(self, args):
-        if args.command in IOManager.valid_commands:
+        if args.command in TaskArenaCommandManager.command_list():
             self.call_emperor()
-            eval('self.'+args.command+'(args)')
+            eval(TaskArenaCommandManager.command_dict()[args.command])
         else:
             self.send_message("Invalid command supplied.")
 
@@ -95,18 +120,18 @@ class IOManager(object):
         elif load_result == 'new':
             self.send_message("New arena config created at " + self.configfile)
 
-    def install(self, args):
+    def _tarena_install(self):
         for uda in uda_config_list:
             IOManager.execute_command(['task', 'config', uda.keys()[0], uda[uda.keys()[0]]])
         self.send_message("TaskArena installed.")
 
-    def uninstall(self, args):
+    def _tarena_uninstall(self):
         for uda in reversed(uda_config_list):
             IOManager.execute_command(['task', 'config', uda.keys()[0]])
         os.remove(self.configfile)
         self.send_message("TaskArena uninstalled.")
 
-    def create(self, args):
+    def _tarena_create(self):
         self.send_message("Creating new Arena...", 1, 1)
         name = self.get_input('Enter a name: ')
         ldata = self.get_input('Enter local data.location: ')
@@ -117,7 +142,7 @@ class IOManager(object):
         else:
             self.send_message("Arena " + name + " already exists!")
 
-    def list(self, args):
+    def _tarena_list(self):
         if self.TaskEmperor.arenas:
             self.send_message("The following arenas are available:", 1)
             for arena in self.TaskEmperor.arenas:
@@ -135,26 +160,26 @@ class IOManager(object):
         else:
             self.send_message("You must supply an arena.")
 
-    def add(self, args):
+    def _tarena_add(self, args):
         arena = self.get_arena(args)
         if arena:
             arena.add(args.filter.split())
             self.send_message("Tasks added.")
 
-    def remove(self, args):
+    def _tarena_remove(self, args):
         arena = self.get_arena(args)
         if arena:
             arena.remove(args.filter)
             self.send_message("Tasks removed from " + arena.name + " .")
 
-    def delete(self, args):
+    def _tarena_delete(self, args):
         arena = self.get_arena(args)
         if arena:
             self.TaskEmperor.delete_arena(arena)
             self.TaskEmperor.save()
             self.send_message("Arena " + arena.name + " deleted.")
 
-    def sync(self, args):
+    def _tarena_sync(self, args):
         arena = self.get_arena(args)
         if arena:
             sm = SyncManager(arena)
@@ -165,21 +190,26 @@ class IOManager(object):
                 sm.carry_out_sync()
                 self.send_message("Sync complete.", 1, 1)
 
-    def tlocal(self, args):
+    def _tarena_local(self, args):
         self.list_tasks(args, 'local_data')
 
-    def tremote(self, args):
+    def _tarena_remote(self, args):
         self.list_tasks(args, 'remote_data')
 
     def list_tasks(self, args, data_location):
         arena = self.get_arena(args)
         if arena:
             p = subprocess.Popen(['task',
-                                  'rc.data.location:'+eval('arena.'+data_location),
-                                  'Arena:'+arena.name,
+                                  'rc.data.location:' + eval('arena.' + data_location),
+                                  'Arena:' + arena.name,
                                   args.filter],
                                  stderr=subprocess.PIPE)
             p.communicate()
+
+    def _tarena_cmdlist(self):
+        self.send_message('TaskArena Commandlist', 1, 1)
+        for c in TaskArenaCommandManager.valid_commands:
+            print(u'  {0:10}   {1:25}'.format(c.command, c.helptext))
 
     def sync_preview(self, synclist):
         self.print_separator()

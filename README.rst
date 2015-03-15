@@ -5,6 +5,8 @@ A tool adding collaborative functionality to TaskWarrior.
 
 **Project status:** Experimental.
 
+**Warning:** Before trying out TaskArena it is strongly suggested that you create a backup of your TaskWarrior database.
+
 Installation
 -------
 
@@ -27,9 +29,26 @@ Installation
 
 This creates some entries in the `taskrc` of your TaskWarrior, which are neccessary so that TaskArena can interact with TaskWarrior.
 
-Usage
+List of Commands
 -------
-**Warning:** Before trying out TaskArena it is strongly suggested that you create a backup of your TaskWarrior database.
+A list of possible commands can be generated via `tarena cmdlist`::
+
+    install      installs TaskArena
+    uninstall    uninstalls TaskArena
+    create       creates a new arena
+    delete       deletes an arena
+    list         lists all arenas
+    add          adds a task to an arena
+    remove       removes a task from an
+    local        lists all local task of an arena
+    remote       lists all remote tasks of an arena
+    sync         syncs an arena
+    cmdlist      creates a list of all commands
+
+A more detailled explaination of the various commands can be found in the following tutorial.
+
+Tutorial
+-------
 
 The general syntax of `tarena` can be read by typing::
 
@@ -90,30 +109,21 @@ The filter can be as complex as you like::
     tarena add housework project:housework +garden due.before:1month
 
 
-**Hint:** Technically, the installation of TaskArena adds some *User Defined Attributes (UDA)* to your TaskWarrior. After you have added a task to an arena you can see them via::
-
-    task 1 info
-
-assuming that the task with ID 1 has been added. TaskWarrior will display all information it has on the task and (among other things)::
-
-    ...
-    Arena         housework
-    ArenaTaskID   156139121905747781424456029047977931020
-
-The UDAs `Arena` and `ArenaTaskID` are used by `tarena` to interact with TaskWarrior.
-
 Managing tasks in an arena
 ~~~~~~~
-You can see a list of all tasks in an arena by::
-
-    task Arena:housework
-
-
 You can remove tasks from an arena in the same fashion. For instance::
 
     tarena remove housework 1
 
 would remove the task with ID 1.
+
+You can see a list of all local tasks in your arena via::
+
+    tarena local housework
+
+You can see a list of all remote tasks in your arena via::
+
+    tarena remote housework
 
 
 Syncinc tasks
@@ -133,6 +143,21 @@ Actually working together
 To actually work together, you have to give your collaborator access to your remote folder, for instance by sharing that folder via Dropbox. Your collaborator has to create an arena with the same name and specify his local TaskWarrior folder as well as his remote folder in his Dropbox. In order for him to get your tasks, he has to perform an ordinary sync::
 
     tarena sync houework
+
+
+A technical hint
+-------
+Technically, the installation of TaskArena adds some *User Defined Attributes (UDA)* to your TaskWarrior. After you have added a task to an arena you can see them via::
+
+    task 1 info
+
+assuming that the task with ID 1 has been added. TaskWarrior will display all information it has on the task and (among other things)::
+
+    ...
+    Arena         housework
+    ArenaTaskID   156139121905747781424456029047977931020
+
+The UDAs `Arena` and `ArenaTaskID` are used by `tarena` to interact with TaskWarrior.
 
 
 Uninstallation
