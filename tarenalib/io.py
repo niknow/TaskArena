@@ -46,7 +46,7 @@ class IOManager(object):
 
     @staticmethod
     def formatted_print(t):
-        print(u'{0:6}   {1:25}   {2:20}   {3:10}\n'.format(t[0][0:6], t[1][0:25], t[2][0:20], t[3][0:10]))
+        print(u'{0:6}   {1:25}   {2:20}   {3:10}'.format(t[0][0:6], t[1][0:25], t[2][0:20], t[3][0:10]))
 
     @staticmethod
     def newlines(num):
