@@ -27,7 +27,7 @@ import os.path
 uda_config_list = [
     {'uda.Arena.type': 'string'},
     {'uda.Arena.label': 'Arena'},
-    {'uda.ArenaTaskID.type': 'numeric'},
+    {'uda.ArenaTaskID.type': 'string'},
     {'uda.ArenaTaskID.label': 'ArenaTaskID'},
 ]
 
@@ -79,7 +79,7 @@ class SharedTask(object):
         if value:
             self.tw_task['Arena'] = self.Arena.name
             if not self.ArenaTaskID:
-                self.ArenaTaskID = uuid.uuid4().__int__()
+                self.ArenaTaskID = uuid.uuid4()
         else:
             self.remove()
 
