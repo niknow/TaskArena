@@ -177,6 +177,10 @@ class TestTaskArena(unittest.TestCase):
 
 class TestTaskEmperor(unittest.TestCase):
 
+    def test_create_task_emperor(self):
+        task_emperor = TaskEmperor()
+        self.assertEqual(type(task_emperor), TaskEmperor)
+
     def test_create_arena(self):
         arena = self.create_local_arena()
         self.assertEqual(self.TE_local.find(self.arena_name), arena)
