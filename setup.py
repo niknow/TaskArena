@@ -13,6 +13,6 @@ setup(
     license='GNU GPLv2',
     url='https://github.com/niknow/TaskArena/tree/master/tarenalib',
     packages=find_packages(),
-    install_requires=['tasklib'],
+    install_requires=['tasklib==0.9.0'],
     test_suite='tarenalib.tests',
 )

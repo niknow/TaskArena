@@ -18,8 +18,8 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-from arena import TaskEmperor, uda_config_list
-from sync import SyncManager
+from tarenalib.arena import TaskEmperor, uda_config_list
+from tarenalib.sync import SyncManager
 import subprocess
 import os
 

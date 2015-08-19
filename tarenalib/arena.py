@@ -224,7 +224,7 @@ class TaskEmperor(object):
 
     def __init__(self):
         self.arenas = []
-        self.configfile = None
+        self.configfile = ''
 
     def load(self, configfile):
         self.configfile = configfile

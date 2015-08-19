@@ -24,6 +24,25 @@ import unittest
 from tarenalib.arena import TaskEmperor, SharedTask, EnhancedTaskWarrior
 
 
+def create_local_arena(self):
+    arena = self.TE_local.create_arena(self.arena_name, self.LocalDir, self.RemoteDir)
+    self.TE_local.save()
+    return arena
+
+
+def create_remote_arena(self):
+    arena = self.TE_remote.create_arena(self.arena_name, self.RemoteDir, self.LocalDir)
+    self.TE_remote.save()
+    return arena
+
+
+def create_task(self, warrior, description):
+    task = TaskEmperor(warrior)
+    task['description'] = description
+    task.save()
+    return task
+
+
 class TestSharedTask(unittest.TestCase):
 
     def test_create_shared_task(self):
@@ -120,22 +139,6 @@ class TestTaskArena(unittest.TestCase):
         os.remove(self.ConfigFileLocal[1])
         os.close(self.ConfigFileRemote[0])
         os.remove(self.ConfigFileRemote[1])
-
-    def create_local_arena(self):
-        arena = self.TE_local.create_arena(self.arena_name, self.LocalDir, self.RemoteDir)
-        self.TE_local.save()
-        return arena
-
-    def create_remote_arena(self):
-        arena = self.TE_remote.create_arena(self.arena_name, self.RemoteDir, self.LocalDir)
-        self.TE_remote.save()
-        return arena
-
-    def create_task(self, warrior, description):
-        task = TaskEmperor(warrior)
-        task['description'] = description
-        task.save()
-        return task
 
     def test_create_add_local_task(self):
         arena = self.create_local_arena()
