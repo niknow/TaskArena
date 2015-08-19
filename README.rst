@@ -1,9 +1,15 @@
 TaskArena
 =======
+.. image:: https://travis-ci.org/niknow/TaskArena.svg?branch=master
+    :target: https://travis-ci.org/niknow/TaskArena
+
+.. image:: https://coveralls.io/repos/niknow/TaskArena/badge.svg?branch=master&service=github
+  :target: https://coveralls.io/github/niknow/TaskArena?branch=master
+
 
 A tool adding collaborative functionality to TaskWarrior.
 
-**Project status:** Experimental.
+**Project status:** broken
 
 **Warning:** Before trying out TaskArena it is strongly suggested that you create a backup of your TaskWarrior database.
 
