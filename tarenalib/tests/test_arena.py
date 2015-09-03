@@ -182,17 +182,20 @@ class TestTaskEmperor(unittest.TestCase):
         self.assertEqual(type(task_emperor), TaskEmperor)
 
     def test_create_arena(self):
-        arena = self.create_local_arena()
-        self.assertEqual(self.TE_local.find(self.arena_name), arena)
+        task_emperor = TaskEmperor()
+        arena = task_emperor.create_arena('my_arena', '\A', '\B')
+        self.assertEqual(task_emperor.arenas[0], arena)
 
     def test_delete_arena(self):
-        arena = self.create_local_arena()
-        self.TE_local.delete_arena(arena)
-        self.assertEqual(self.TE_local.find(self.arena_name), None)
+        task_emperor = TaskEmperor()
+        arena = task_emperor.create_arena('my_arena', '\A', '\B')
+        task_emperor.delete_arena(arena)
+        self.assertEqual(task_emperor.arenas, [])
 
     def test_find_arena(self):
-        arena = self.TE_local.find(self.arena_name)
-        found = self.TE_local.find(self.arena_name)
+        task_emperor = TaskEmperor()
+        arena = task_emperor.create_arena('my_arena', '\A', '\B')
+        found = task_emperor.find('my_arena')
         self.assertEqual(arena, found)
 
 
