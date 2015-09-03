@@ -22,10 +22,9 @@ import os
 import shutil
 import tempfile
 import unittest
-# from tarenalib.arena import TaskEmperor, SharedTask, EnhancedTaskWarrior
 from io import StringIO
-from tarenalib.arena import TaskEmperor
-
+from tarenalib.arena import TaskEmperor, TaskArena
+from unittest.mock import patch
 
 def create_local_arena(self):
     arena = self.TE_local.create_arena(self.arena_name, self.LocalDir, self.RemoteDir)
@@ -176,16 +175,18 @@ class TestTaskArena(unittest.TestCase):
 
 
 class TestTaskEmperor(unittest.TestCase):
+
     def test_create_task_emperor(self):
         task_emperor = TaskEmperor()
         self.assertEqual(type(task_emperor), TaskEmperor)
 
-    def test_create_arena(self):
+    def test_create_emperor(self):
         task_emperor = TaskEmperor()
         arena = task_emperor.create_arena('my_arena', '\A', '\B')
         self.assertEqual(task_emperor.arenas[0], arena)
 
-    def test_delete_arena(self):
+    @patch('tarenalib.arena.TaskArena')
+    def test_delete_arena(self, mock_taskarena):
         task_emperor = TaskEmperor()
         arena = task_emperor.create_arena('my_arena', '\A', '\B')
         task_emperor.delete_arena(arena)
