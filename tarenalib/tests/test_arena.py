@@ -16,12 +16,15 @@
 # You should have received a copy of the GNU General Public License along
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+import json
 
 import os
 import shutil
 import tempfile
 import unittest
-from tarenalib.arena import TaskEmperor, SharedTask, EnhancedTaskWarrior
+# from tarenalib.arena import TaskEmperor, SharedTask, EnhancedTaskWarrior
+from io import StringIO
+from tarenalib.arena import TaskEmperor
 
 
 def create_local_arena(self):
@@ -44,7 +47,6 @@ def create_task(self, warrior, description):
 
 
 class TestSharedTask(unittest.TestCase):
-
     def test_create_shared_task(self):
         arena = self.create_local_arena()
         task = self.create_task(arena.tw_local.tw, 'paint walls')
@@ -89,7 +91,6 @@ class TestSharedTask(unittest.TestCase):
 
 
 class TestEnhancedTaskWarrior(unittest.TestCase):
-
     def test_tasks(self):
         arena = self.create_local_arena()
         etw = EnhancedTaskWarrior(arena.tw_local.tw, arena)
@@ -120,7 +121,6 @@ class TestEnhancedTaskWarrior(unittest.TestCase):
 
 
 class TestTaskArena(unittest.TestCase):
-
     def setUp(self):
         self.LocalDir = tempfile.mkdtemp(dir='.')
         self.RemoteDir = tempfile.mkdtemp(dir='.')
@@ -176,7 +176,6 @@ class TestTaskArena(unittest.TestCase):
 
 
 class TestTaskEmperor(unittest.TestCase):
-
     def test_create_task_emperor(self):
         task_emperor = TaskEmperor()
         self.assertEqual(type(task_emperor), TaskEmperor)
@@ -197,5 +196,15 @@ class TestTaskEmperor(unittest.TestCase):
         arena = task_emperor.create_arena('my_arena', '\A', '\B')
         found = task_emperor.find('my_arena')
         self.assertEqual(arena, found)
+
+    def test_save_load(self):
+        task_emperor = TaskEmperor()
+        f = StringIO()
+        task_emperor.create_arena('my_arena', '\A', '\B')
+        json_data = task_emperor.json
+        task_emperor.save(f)
+        f.seek(0, 0)
+        task_emperor.load(f)
+        self.assertEqual(task_emperor.json, json_data)
 
 

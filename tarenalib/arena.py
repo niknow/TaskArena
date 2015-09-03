@@ -224,23 +224,15 @@ class TaskEmperor(object):
 
     def __init__(self):
         self.arenas = []
-        self.configfile = ''
 
-    def load(self, configfile):
-        self.configfile = configfile
-        if os.path.isfile(self.configfile):
-            f = open(self.configfile)
-            try:
-                self.json = json.load(f)
-                return 'loaded'
-            except:
-                return 'empty'
-        else:
-            open(self.configfile, 'w+')
-            return 'new'
+    def load(self, f):
+        try:
+            self.json = json.load(f)
+            return 1
+        except ValueError:
+            return 0
 
-    def save(self):
-        f = open(self.configfile, 'w+')
+    def save(self, f):
         json.dump(self.json, f)
 
     def get_json(self):
@@ -256,8 +248,7 @@ class TaskEmperor(object):
     json = property(get_json, set_json)
 
     def __repr__(self):
-        return {'configfile': self.configfile,
-                'arenas': [p.__repr__() for p in self.arenas]}
+        return {'arenas': [p.__repr__() for p in self.arenas]}
 
     def __str__(self):
         return str(self.__repr__())

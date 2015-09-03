@@ -112,6 +112,18 @@ class IOManager(object):
             self.send_message("Invalid command supplied.")
 
     def call_emperor(self):
+
+        #  if os.path.isfile(self.configfile):
+        #     f = open(self.configfile)
+        #     try:
+        #         self.json = json.load(f)
+        #         return 'loaded'
+        #     except:
+        #         return 'empty'
+        # else:
+        #     open(self.configfile, 'w+')
+        #     return 'new'
+
         load_result = self.TaskEmperor.load(self.configfile)
         if load_result == 'loaded':
             self.send_message("Arenas loaded.")
@@ -138,7 +150,7 @@ class IOManager(object):
         rdata = self.get_input('Enter remote data.location: ')
         if self.TaskEmperor.create_arena(name, ldata, rdata):
             self.send_message("Arena " + name + " created.")
-            self.TaskEmperor.save()
+            self.TaskEmperor.save() # todo enter file handle here
         else:
             self.send_message("Arena " + name + " already exists!")
 
