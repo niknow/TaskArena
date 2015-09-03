@@ -23,26 +23,7 @@ from unittest.mock import patch
 from io import StringIO
 
 from tarenalib.arena import TaskEmperor, TaskArena, EnhancedTaskWarrior
-
-
-def create_local_arena(self):
-    arena = self.TE_local.create_arena(self.arena_name, self.LocalDir, self.RemoteDir)
-    self.TE_local.save()
-    return arena
-
-
-def create_remote_arena(self):
-    arena = self.TE_remote.create_arena(self.arena_name, self.RemoteDir, self.LocalDir)
-    self.TE_remote.save()
-    return arena
-
-
-def create_task(self, warrior, description):
-    task = TaskEmperor(warrior)
-    task['description'] = description
-    task.save()
-    return task
-
+import tasklib.task as tlib
 
 class TestSharedTask(unittest.TestCase):
     def test_create_shared_task(self):
@@ -89,6 +70,14 @@ class TestSharedTask(unittest.TestCase):
 
 
 class TestEnhancedTaskWarrior(unittest.TestCase):
+
+    @patch('tasklib.task.TaskWarrior')
+    def test_create_etw(self, mock):
+        tw = tlib.TaskWarrior()
+        etw = EnhancedTaskWarrior(tw, 'B')
+        self.assertEqual(type(etw), EnhancedTaskWarrior)
+
+
     def test_tasks(self):
         arena = self.create_local_arena()
         etw = EnhancedTaskWarrior(arena.tw_local.tw, arena)

@@ -22,7 +22,6 @@
 import json
 import uuid
 import tasklib.task as tlib
-import os.path
 
 uda_config_list = [
     {'uda.Arena.type': 'string'},
@@ -136,6 +135,9 @@ class SharedTask(object):
 
 
 class EnhancedTaskWarrior(object):
+    """ A task warrior that provides additional functionality for managing tasks in a TaskArena.
+    """
+
     def __init__(self, tw, arena):
         self.tw = tw
         self.arena = arena
@@ -151,6 +153,19 @@ class EnhancedTaskWarrior(object):
         for field in tw_attrs_editable:
             t.tw_task[field] = task.tw_task[field]
         return t
+
+    def add_tasks_matching_pattern(self, pattern):
+        tasks = self.tasks(pattern)
+        for ta_task in tasks:
+            ta_task.save()
+        return tasks
+
+    def remove_tasks_matching_pattern(self, pattern):
+        tasks = self.tasks([pattern, 'Arena:' + self.arena.name])
+        for ta_task in tasks:
+            ta_task.remove()
+            ta_task.save()
+        return tasks
 
 
 class TaskArena(object):
@@ -200,20 +215,6 @@ class TaskArena(object):
 
     def __str__(self):
         return str(self.__repr__())
-
-    # todo: should'nt this be in the enhanced task warrior?
-    # def add(self, pattern):
-    #     tasks = self.tw_local.tasks(pattern)
-    #     for ta_task in tasks:
-    #         ta_task.save()
-    #     return tasks
-    #
-    # def remove(self, pattern):
-    #     tasks = self.tw_local.tasks([pattern, 'Arena:' + self.name])
-    #     for ta_task in tasks:
-    #         ta_task.remove()
-    #         ta_task.save()
-    #     return tasks
 
     def get_local_tasks(self):
         return self.tw_local.tasks(['Arena:' + self.name])

@@ -175,13 +175,13 @@ class IOManager(object):
     def _tarena_add(self, args):
         arena = self.get_arena(args)
         if arena:
-            arena.add(args.filter.split())
+            arena.tw_local.add_tasks_matching_pattern(args.filter.split())
             self.send_message("Tasks added.")
 
     def _tarena_remove(self, args):
         arena = self.get_arena(args)
         if arena:
-            arena.remove(args.filter)
+            arena.tw_local.remove_tasks_matching_pattern(args.filter)
             self.send_message("Tasks removed from " + arena.name + " .")
 
     def _tarena_delete(self, args):
