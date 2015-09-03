@@ -16,15 +16,14 @@
 # You should have received a copy of the GNU General Public License along
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
-import json
 
-import os
-import shutil
-import tempfile
+
 import unittest
-from io import StringIO
-from tarenalib.arena import TaskEmperor, TaskArena
 from unittest.mock import patch
+from io import StringIO
+
+from tarenalib.arena import TaskEmperor, TaskArena, EnhancedTaskWarrior
+
 
 def create_local_arena(self):
     arena = self.TE_local.create_arena(self.arena_name, self.LocalDir, self.RemoteDir)
@@ -120,58 +119,34 @@ class TestEnhancedTaskWarrior(unittest.TestCase):
 
 
 class TestTaskArena(unittest.TestCase):
-    def setUp(self):
-        self.LocalDir = tempfile.mkdtemp(dir='.')
-        self.RemoteDir = tempfile.mkdtemp(dir='.')
-        self.ConfigFileLocal = tempfile.mkstemp(dir='.')
-        self.ConfigFileRemote = tempfile.mkstemp(dir='.')
-        self.TE_local = TaskEmperor()
-        self.TE_local.load(self.ConfigFileLocal[1])
-        self.TE_remote = TaskEmperor()
-        self.TE_remote.load(self.ConfigFileRemote[1])
-        self.arena_name = "RefurbishHouse"
 
-    def tearDown(self):
-        shutil.rmtree(self.LocalDir)
-        shutil.rmtree(self.RemoteDir)
-        os.close(self.ConfigFileLocal[0])
-        os.remove(self.ConfigFileLocal[1])
-        os.close(self.ConfigFileRemote[0])
-        os.remove(self.ConfigFileRemote[1])
+    def test_create_arena(self):
+        arena = TaskArena()
+        self.assertEqual(type(arena), TaskArena)
 
-    def test_create_add_local_task(self):
-        arena = self.create_local_arena()
-        task_description = 'paint walls'
-        self.create_task(arena.tw_local.tw, task_description)
-        arena.add(task_description)
-        loaded_task = arena.tw_local.tasks(['Arena:' + self.arena_name, task_description])[0]
-        self.assertEqual(task_description, loaded_task.tw_task['description'])
+    @patch('tarenalib.arena.EnhancedTaskWarrior')
+    def test_local_data(self, mock):
+        arena = TaskArena()
+        arena.local_data = 'local'
+        self.assertEqual(arena.local_data, 'local')
 
-    def test_remove_local_task(self):
-        arena = self.create_local_arena()
-        task_description = 'paint walls'
-        self.create_task(arena.tw_local.tw, task_description)
-        arena.add(task_description)
-        arena.remove(task_description)
-        loaded_task = arena.tw_local.tasks(['Arena:' + self.arena_name, task_description])
-        self.assertEqual(loaded_task, [])
+    @patch('tarenalib.arena.EnhancedTaskWarrior')
+    def test_remote_data(self, mock):
+        arena = TaskArena()
+        arena.remote_data = 'remote'
+        self.assertEqual(arena.remote_data, 'remote')
 
-    def test_create_add_remote_task(self):
-        remote_arena = self.create_remote_arena()
-        task_description = "paint ceiling"
-        self.create_task(remote_arena.tw_local.tw, task_description)
-        remote_arena.add(task_description)
-        loaded_task = remote_arena.tw_local.tasks(['Arena:' + self.arena_name, task_description])[0]
-        self.assertEqual(task_description, loaded_task.tw_task['description'])
-
-    def test_remove_remote_task(self):
-        remote_arena = self.create_remote_arena()
-        task_description = 'paint ceiling'
-        self.create_task(remote_arena.tw_local.tw, task_description)
-        remote_arena.add(task_description)
-        remote_arena.remove(task_description)
-        loaded_task = remote_arena.tw_local.tasks(['Arena:' + self.arena_name, task_description])
-        self.assertEqual(loaded_task, [])
+    def test_json(self):
+        arena = TaskArena()
+        arena.local_data = 'local'
+        arena.remote_data = 'remote'
+        arena.name = 'my_arena'
+        data = {'remote_data': 'remote', 'local_data': 'local', 'name': 'my_arena'}
+        self.assertEqual(arena.json, data)
+        arena.json = data
+        self.assertEqual(arena.local_data, 'local')
+        self.assertEqual(arena.remote_data, 'remote')
+        self.assertEqual(arena.name, 'my_arena')
 
 
 class TestTaskEmperor(unittest.TestCase):

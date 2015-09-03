@@ -156,7 +156,7 @@ class EnhancedTaskWarrior(object):
 class TaskArena(object):
     """ A project that is shared with others. """
 
-    def __init__(self, arena_name='', ldata='/', rdata='/'):
+    def __init__(self, arena_name='', ldata='', rdata=''):
         self._local_data = None
         self._remote_data = None
         self.tw_local = None
@@ -169,8 +169,9 @@ class TaskArena(object):
         return self._local_data
 
     def set_local_data(self, ldata):
-        self._local_data = ldata
-        self.tw_local = EnhancedTaskWarrior(tlib.TaskWarrior(data_location=ldata), self)
+        if ldata:
+            self._local_data = ldata
+            self.tw_local = EnhancedTaskWarrior(tlib.TaskWarrior(data_location=ldata), self)
 
     local_data = property(get_local_data, set_local_data)
 
@@ -178,8 +179,9 @@ class TaskArena(object):
         return self._remote_data
 
     def set_remote_data(self, rdata):
-        self._remote_data = rdata
-        self.tw_remote = EnhancedTaskWarrior(tlib.TaskWarrior(data_location=rdata), self)
+        if rdata:
+            self._remote_data = rdata
+            self.tw_remote = EnhancedTaskWarrior(tlib.TaskWarrior(data_location=rdata), self)
 
     remote_data = property(get_remote_data, set_remote_data)
 
@@ -199,18 +201,19 @@ class TaskArena(object):
     def __str__(self):
         return str(self.__repr__())
 
-    def add(self, pattern):
-        tasks = self.tw_local.tasks(pattern)
-        for ta_task in tasks:
-            ta_task.save()
-        return tasks
-
-    def remove(self, pattern):
-        tasks = self.tw_local.tasks([pattern, 'Arena:' + self.name])
-        for ta_task in tasks:
-            ta_task.remove()
-            ta_task.save()
-        return tasks
+    # todo: should'nt this be in the enhanced task warrior?
+    # def add(self, pattern):
+    #     tasks = self.tw_local.tasks(pattern)
+    #     for ta_task in tasks:
+    #         ta_task.save()
+    #     return tasks
+    #
+    # def remove(self, pattern):
+    #     tasks = self.tw_local.tasks([pattern, 'Arena:' + self.name])
+    #     for ta_task in tasks:
+    #         ta_task.remove()
+    #         ta_task.save()
+    #     return tasks
 
     def get_local_tasks(self):
         return self.tw_local.tasks(['Arena:' + self.name])
