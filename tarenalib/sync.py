@@ -118,3 +118,72 @@ class SyncElement(object):
                     'suggestion:': self.suggestion,
                     'action:': self.action,
                     'fields:': self.fields})
+
+class SyncIOManager(object):
+
+    def sync_preview(self, synclist):
+        self.print_separator()
+        IOManager.formatted_print(('', 'Task', 'LastModified', 'Suggestion'))
+        self.print_separator()
+        for e in synclist:
+            IOManager.formatted_print(('Local', e.local_description, e.local_last_modified, ''))
+            IOManager.formatted_print(('Remote', e.remote_description, e.remote_last_modified, e.suggestion))
+            self.print_separator()
+        return IOManager.get_input("Do you want to sync (a)ll, sync (m)anually or (c)ancel? (a/m/c) ", 1)
+
+    def sync_choice(self, e):
+        if e.local_task:
+            self.send_message("Task Description: " + e.local_task.tw_task['description'])
+            self.send_message("ArenaTaskID     : " + e.local_task.ArenaTaskID)
+            if e.remote_task:
+                self.send_message("Task exists in both repositories.", 1, 1)
+                self.send_message("Last modified (local) : " + e.local_last_modified)
+                self.send_message("Last modified (remote): " + e.remote_last_modified)
+                self.send_message("Suggesting to " + e.suggestion + ".", 1, 1)
+                self.send_message("This would cause the following modifications:", 0, 1)
+                for field in e.fields:
+                    local_field = str(e.local_task.tw_task[field]) if e.local_task.tw_task[field] else '(empty)'
+                    remote_field = str(e.remote_task.tw_task[field]) if e.remote_task.tw_task[field] else '(empty)'
+                    self.send_message(field + ": " + local_field + (
+                        " -> " if e.suggestion == 'UPLOAD' else ' <- ') + remote_field)
+                result = IOManager.get_input("Do you want to (u)pload, (d)ownload, (s)kip or (c)ancel sync? (u/d/s/c) ",
+                                             1)
+            else:
+                self.send_message("This task does not yet exist on remote. Suggestion: " + e.suggestion, 1)
+                result = IOManager.get_input("Do you want to (u)pload, (s)kip or (c)ancel sync? (u/s/c) ", 1)
+        else:
+            self.print_separator()
+            self.send_message("Description: " + e.remote_task.tw_task['description'])
+            self.send_message("ArenaTaskID: " + e.remote_task.ArenaTaskID)
+            self.send_message("This task does not yet exist on local.", 1)
+            result = IOManager.get_input("Do you want to (d)ownload, (s)kip or (c)ancel sync? (d/s/c) ", 1)
+        return result
+
+    def let_user_check_and_modify_synclist(self, synclist, arena):
+        if synclist:
+            self.send_message("Suggesting the following sync operations on " + arena.name + "...", 1, 2)
+            sync_command = self.sync_preview(synclist)
+            if sync_command == 'a':
+                for elem in synclist:
+                    elem.action = elem.suggestion
+            elif sync_command == 'm':
+                self.send_message("Starting manual sync...", 1, 1)
+                for elem in synclist:
+                    self.print_separator()
+                    sc = self.sync_choice(elem)
+                    if sc == 'u':
+                        elem.action = 'UPLOAD'
+                        self.send_message("Task will be uploaded.", 1)
+                    elif sc == 'd':
+                        elem.action = 'DOWNLOAD'
+                        self.send_message("Task will be downloaded.", 1)
+                    elif sc == 's':
+                        elem.action = 'SKIP'
+                        self.send_message("Task skipped.", 1)
+                    elif sc == 'c':
+                        self.send_message("Sync canceled.", 0, 1)
+                        synclist = []
+                        break
+            return synclist
+        else:
+            self.send_message("Arena " + arena.name + " is in sync.")

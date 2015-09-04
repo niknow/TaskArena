@@ -24,46 +24,6 @@ import subprocess
 import os
 
 
-class TaskArenaCommand(object):
-    def __init__(self, command='', args=True, helptext=''):
-        self.command = command
-        self.args = args
-        self.helptext = helptext
-
-    def function_string(self):
-        if self.args:
-            return 'self._tarena_' + self.command + '(args)'
-        else:
-            return 'self._tarena_' + self.command + '()'
-
-
-class TaskArenaCommandManager(object):
-    valid_commands = [
-        TaskArenaCommand('install', False, 'installs TaskArena'),
-        TaskArenaCommand('uninstall', False, 'uninstalls TaskArena'),
-        TaskArenaCommand('create', False, 'creates a new arena'),
-        TaskArenaCommand('delete', True, 'deletes an arena'),
-        TaskArenaCommand('list', False, 'lists all arenas'),
-        TaskArenaCommand('add', True, 'adds a task to an arena'),
-        TaskArenaCommand('remove', True, 'removes a task from an'),
-        TaskArenaCommand('local', True, 'lists all local task of an arena'),
-        TaskArenaCommand('remote', True, 'lists all remote tasks of an arena'),
-        TaskArenaCommand('sync', True, 'syncs an arena'),
-        TaskArenaCommand('cmdlist', False, 'creates a list of all commands'),
-    ]
-
-    @staticmethod
-    def command_list():
-        return [c.command for c in TaskArenaCommandManager.valid_commands]
-
-    @staticmethod
-    def command_dict():
-        d = {}
-        for c in TaskArenaCommandManager.valid_commands:
-            d[c.command] = c.function_string()
-        return d
-
-
 class IOManager(object):
     def __init__(self, show_output=True, seplength=75):
         self.show_output = show_output
@@ -132,35 +92,7 @@ class IOManager(object):
         elif load_result == 'new':
             self.send_message("New arena config created at " + self.configfile)
 
-    def _tarena_install(self):
-        for uda in uda_config_list:
-            IOManager.execute_command(['task', 'config', uda.keys()[0], uda[uda.keys()[0]]])
-        self.send_message("TaskArena installed.")
 
-    def _tarena_uninstall(self):
-        for uda in reversed(uda_config_list):
-            IOManager.execute_command(['task', 'config', uda.keys()[0]])
-        os.remove(self.configfile)
-        self.send_message("TaskArena uninstalled.")
-
-    def _tarena_create(self):
-        self.send_message("Creating new Arena...", 1, 1)
-        name = self.get_input('Enter a name: ')
-        ldata = self.get_input('Enter local data.location: ')
-        rdata = self.get_input('Enter remote data.location: ')
-        if self.TaskEmperor.create_arena(name, ldata, rdata):
-            self.send_message("Arena " + name + " created.")
-            self.TaskEmperor.save() # todo enter file handle here
-        else:
-            self.send_message("Arena " + name + " already exists!")
-
-    def _tarena_list(self):
-        if self.TaskEmperor.arenas:
-            self.send_message("The following arenas are available:", 1)
-            for arena in self.TaskEmperor.arenas:
-                self.send_message("arena : " + arena.name, 1)
-                self.send_message("local : " + arena.local_data)
-                self.send_message("remote: " + arena.remote_data, 0, 1)
 
     def get_arena(self, args):
         if args.arena:
@@ -172,41 +104,7 @@ class IOManager(object):
         else:
             self.send_message("You must supply an arena.")
 
-    def _tarena_add(self, args):
-        arena = self.get_arena(args)
-        if arena:
-            arena.tw_local.add_tasks_matching_pattern(args.filter.split())
-            self.send_message("Tasks added.")
 
-    def _tarena_remove(self, args):
-        arena = self.get_arena(args)
-        if arena:
-            arena.tw_local.remove_tasks_matching_pattern(args.filter)
-            self.send_message("Tasks removed from " + arena.name + " .")
-
-    def _tarena_delete(self, args):
-        arena = self.get_arena(args)
-        if arena:
-            self.TaskEmperor.delete_arena(arena)
-            self.TaskEmperor.save()
-            self.send_message("Arena " + arena.name + " deleted.")
-
-    def _tarena_sync(self, args):
-        arena = self.get_arena(args)
-        if arena:
-            sm = SyncManager(arena)
-            sm.generate_synclist()
-            sm.suggest_conflict_resolution()
-            sm.synclist = self.let_user_check_and_modify_synclist(sm.synclist, arena)
-            if sm.synclist:
-                sm.carry_out_sync()
-                self.send_message("Sync complete.", 1, 1)
-
-    def _tarena_local(self, args):
-        self.list_tasks(args, 'local_data')
-
-    def _tarena_remote(self, args):
-        self.list_tasks(args, 'remote_data')
 
     def list_tasks(self, args, data_location):
         arena = self.get_arena(args)
@@ -218,74 +116,5 @@ class IOManager(object):
                                  stderr=subprocess.PIPE)
             p.communicate()
 
-    def _tarena_cmdlist(self):
-        self.send_message('TaskArena Commandlist', 1, 1)
-        for c in TaskArenaCommandManager.valid_commands:
-            print(u'  {0:10}   {1:25}'.format(c.command, c.helptext))
 
-    def sync_preview(self, synclist):
-        self.print_separator()
-        IOManager.formatted_print(('', 'Task', 'LastModified', 'Suggestion'))
-        self.print_separator()
-        for e in synclist:
-            IOManager.formatted_print(('Local', e.local_description, e.local_last_modified, ''))
-            IOManager.formatted_print(('Remote', e.remote_description, e.remote_last_modified, e.suggestion))
-            self.print_separator()
-        return IOManager.get_input("Do you want to sync (a)ll, sync (m)anually or (c)ancel? (a/m/c) ", 1)
 
-    def sync_choice(self, e):
-        if e.local_task:
-            self.send_message("Task Description: " + e.local_task.tw_task['description'])
-            self.send_message("ArenaTaskID     : " + e.local_task.ArenaTaskID)
-            if e.remote_task:
-                self.send_message("Task exists in both repositories.", 1, 1)
-                self.send_message("Last modified (local) : " + e.local_last_modified)
-                self.send_message("Last modified (remote): " + e.remote_last_modified)
-                self.send_message("Suggesting to " + e.suggestion + ".", 1, 1)
-                self.send_message("This would cause the following modifications:", 0, 1)
-                for field in e.fields:
-                    local_field = str(e.local_task.tw_task[field]) if e.local_task.tw_task[field] else '(empty)'
-                    remote_field = str(e.remote_task.tw_task[field]) if e.remote_task.tw_task[field] else '(empty)'
-                    self.send_message(field + ": " + local_field + (
-                        " -> " if e.suggestion == 'UPLOAD' else ' <- ') + remote_field)
-                result = IOManager.get_input("Do you want to (u)pload, (d)ownload, (s)kip or (c)ancel sync? (u/d/s/c) ",
-                                             1)
-            else:
-                self.send_message("This task does not yet exist on remote. Suggestion: " + e.suggestion, 1)
-                result = IOManager.get_input("Do you want to (u)pload, (s)kip or (c)ancel sync? (u/s/c) ", 1)
-        else:
-            self.print_separator()
-            self.send_message("Description: " + e.remote_task.tw_task['description'])
-            self.send_message("ArenaTaskID: " + e.remote_task.ArenaTaskID)
-            self.send_message("This task does not yet exist on local.", 1)
-            result = IOManager.get_input("Do you want to (d)ownload, (s)kip or (c)ancel sync? (d/s/c) ", 1)
-        return result
-
-    def let_user_check_and_modify_synclist(self, synclist, arena):
-        if synclist:
-            self.send_message("Suggesting the following sync operations on " + arena.name + "...", 1, 2)
-            sync_command = self.sync_preview(synclist)
-            if sync_command == 'a':
-                for elem in synclist:
-                    elem.action = elem.suggestion
-            elif sync_command == 'm':
-                self.send_message("Starting manual sync...", 1, 1)
-                for elem in synclist:
-                    self.print_separator()
-                    sc = self.sync_choice(elem)
-                    if sc == 'u':
-                        elem.action = 'UPLOAD'
-                        self.send_message("Task will be uploaded.", 1)
-                    elif sc == 'd':
-                        elem.action = 'DOWNLOAD'
-                        self.send_message("Task will be downloaded.", 1)
-                    elif sc == 's':
-                        elem.action = 'SKIP'
-                        self.send_message("Task skipped.", 1)
-                    elif sc == 'c':
-                        self.send_message("Sync canceled.", 0, 1)
-                        synclist = []
-                        break
-            return synclist
-        else:
-            self.send_message("Arena " + arena.name + " is in sync.")
