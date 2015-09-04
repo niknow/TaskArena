@@ -264,7 +264,7 @@ class TaskEmperor(object):
             return arena
 
     def delete_arena(self, arena):
-        arena.remove('')
+        arena.tw_local.remove_tasks_matching_pattern('')
         self.arenas.remove(arena)
 
     def find(self, arena_name):

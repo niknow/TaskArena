@@ -71,8 +71,14 @@ class TestSharedTask(unittest.TestCase):
 
 class TestEnhancedTaskWarrior(unittest.TestCase):
 
-    @patch('tasklib.task.TaskWarrior')
-    def test_create_etw(self, mock):
+    def setUp(self):
+        self.patcher1 = patch('tasklib.task.TaskWarrior')
+        self.MockClass1 = self.patcher1.start()
+
+    def tearDown(self):
+        self.patcher1.stop()
+
+    def test_create_etw(self):
         tw = tlib.TaskWarrior()
         etw = EnhancedTaskWarrior(tw, 'B')
         self.assertEqual(type(etw), EnhancedTaskWarrior)
@@ -109,18 +115,23 @@ class TestEnhancedTaskWarrior(unittest.TestCase):
 
 class TestTaskArena(unittest.TestCase):
 
+    def setUp(self):
+        self.patcher1 = patch('tasklib.task.TaskWarrior')
+        self.MockClass1 = self.patcher1.start()
+
+    def tearDown(self):
+        self.patcher1.stop()
+
     def test_create_arena(self):
         arena = TaskArena()
         self.assertEqual(type(arena), TaskArena)
 
-    @patch('tarenalib.arena.EnhancedTaskWarrior')
-    def test_local_data(self, mock):
+    def test_local_data(self):
         arena = TaskArena()
         arena.local_data = 'local'
         self.assertEqual(arena.local_data, 'local')
 
-    @patch('tarenalib.arena.EnhancedTaskWarrior')
-    def test_remote_data(self, mock):
+    def test_remote_data(self):
         arena = TaskArena()
         arena.remote_data = 'remote'
         self.assertEqual(arena.remote_data, 'remote')
@@ -140,6 +151,13 @@ class TestTaskArena(unittest.TestCase):
 
 class TestTaskEmperor(unittest.TestCase):
 
+    def setUp(self):
+        self.patcher1 = patch('tasklib.task.TaskWarrior')
+        self.MockClass1 = self.patcher1.start()
+
+    def tearDown(self):
+        self.patcher1.stop()
+
     def test_create_task_emperor(self):
         task_emperor = TaskEmperor()
         self.assertEqual(type(task_emperor), TaskEmperor)
@@ -149,8 +167,7 @@ class TestTaskEmperor(unittest.TestCase):
         arena = task_emperor.create_arena('my_arena', '\A', '\B')
         self.assertEqual(task_emperor.arenas[0], arena)
 
-    @patch('tarenalib.arena.TaskArena')
-    def test_delete_arena(self, mock_taskarena):
+    def test_delete_arena(self):
         task_emperor = TaskEmperor()
         arena = task_emperor.create_arena('my_arena', '\A', '\B')
         task_emperor.delete_arena(arena)
@@ -171,5 +188,3 @@ class TestTaskEmperor(unittest.TestCase):
         f.seek(0, 0)
         task_emperor.load(f)
         self.assertEqual(task_emperor.json, json_data)
-
-
