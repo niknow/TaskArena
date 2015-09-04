@@ -63,7 +63,7 @@ tw_attrs_read_only = [
 
 
 class SharedTask(object):
-    """ A Task that can be shared in an arena."""
+    """ A Task that can be shared in a TaskArena."""
 
     def __init__(self, tw_task, arena=None):
         self.tw_task = tw_task
@@ -127,11 +127,7 @@ class SharedTask(object):
         return str(self.__repr__())
 
     def save(self):
-        try:
-            self.tw_task.save()
-            return 1
-        except:
-            return 0
+        self.tw_task.save()
 
 
 class EnhancedTaskWarrior(object):

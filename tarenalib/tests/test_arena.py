@@ -22,32 +22,62 @@ import unittest
 from unittest.mock import patch
 from io import StringIO
 
-from tarenalib.arena import TaskEmperor, TaskArena, EnhancedTaskWarrior
+from tarenalib.arena import TaskEmperor, TaskArena, EnhancedTaskWarrior, SharedTask, tw_attrs_editable
 import tasklib.task as tlib
 
 
 class TestSharedTask(unittest.TestCase):
-    def test_create_shared_task(self):
-        arena = self.create_local_arena()
-        task = self.create_task(arena.tw_local.tw, 'paint walls')
-        shared_task = SharedTask(task, arena)
-        self.assertEqual(shared_task.Arena.name, arena.name)
-        self.assertNotEqual(shared_task.ArenaTaskID, None)
 
-    def test_remove_shared_task(self):
-        arena = self.create_local_arena()
-        task = self.create_task(arena.tw_local.tw, 'paint walls')
-        shared_task = SharedTask(task, arena)
-        shared_task.save()
+    def setUp(self):
+        self.patcher1 = patch('tasklib.task.TaskWarrior')
+        self.MockClass1 = self.patcher1.start()
+        self.patcher2 = patch('tasklib.task.Task', new=dict)
+        self.MockClass2 = self.patcher2.start()
+
+    def tearDown(self):
+        self.patcher1.stop()
+        self.patcher2.stop()
+
+    def test_create_shared_task(self):
+        shared_task = SharedTask(tlib.Task(tlib.TaskWarrior()))
+        self.assertEqual(type(shared_task), SharedTask)
+
+    def test_arena_setting(self):
+        arena = TaskArena('my_arena', 'local', 'remote')
+        shared_task = SharedTask(tlib.Task(tlib.TaskWarrior()))
+        shared_task.Arena = arena
+        self.assertEqual(shared_task.tw_task['Arena'], 'my_arena')
+        self.assertIsNotNone(shared_task.ArenaTaskID)
+        shared_task.Arena = ''
+        self.assertEqual(shared_task.Arena, '')
+        self.assertEqual(shared_task.ArenaTaskID, '')
+
+    def test_arena_task_id_setting(self):
+        shared_task = SharedTask(tlib.Task(tlib.TaskWarrior()))
+        shared_task.ArenaTaskID = 'abc'
+        self.assertEqual(shared_task.tw_task['ArenaTaskID'], 'abc')
+
+    def test_remove(self):
+        shared_task = SharedTask(tlib.Task(tlib.TaskWarrior()))
+        shared_task.tw_task['Arena'] = 'my_arena'
+        shared_task.tw_task['ArenaTaskID'] = 'abc'
         shared_task.remove()
         self.assertEqual(shared_task.tw_task['Arena'], '')
         self.assertEqual(shared_task.tw_task['ArenaTaskID'], '')
 
+    def test_last_modified(self):
+        shared_task = SharedTask(tlib.Task(tlib.TaskWarrior()))
+        shared_task.tw_task['modified'] = ''
+        shared_task.tw_task['entry'] = 'entered'
+        self.assertEqual(shared_task.last_modified(), 'entered')
+        shared_task.tw_task['modified'] = 'last_week'
+        self.assertEqual(shared_task.last_modified(), 'last_week')
+
     def test_update_shared_task(self):
-        arena = self.create_local_arena()
-        task = self.create_task(arena.tw_local.tw, 'paint walls')
-        shared_task1 = SharedTask(task, arena)
-        shared_task2 = SharedTask(task, arena)
+        shared_task1 = SharedTask(tlib.Task(tlib.TaskWarrior()))
+        shared_task2 = SharedTask(tlib.Task(tlib.TaskWarrior()))
+        shared_task1.tw_task = {attr: '' for attr in tw_attrs_editable}
+        shared_task2.tw_task = {attr: '' for attr in tw_attrs_editable}
         shared_task2.tw_task['description'] = 'paint ceilling'
         shared_task2.tw_task['project'] = 'foo'
         shared_task2.tw_task['priority'] = 'h'
@@ -57,9 +87,10 @@ class TestSharedTask(unittest.TestCase):
         self.assertEqual(shared_task1.tw_task['priority'], shared_task1.tw_task['priority'])
 
     def test_different_fields(self):
-        arena = self.create_local_arena()
-        shared_task1 = SharedTask(self.create_task(arena.tw_local.tw, 'paint walls'), arena)
-        shared_task2 = SharedTask(self.create_task(arena.tw_local.tw, 'paint walls'), arena)
+        shared_task1 = SharedTask(tlib.Task(tlib.TaskWarrior()))
+        shared_task2 = SharedTask(tlib.Task(tlib.TaskWarrior()))
+        shared_task1.tw_task = {attr: '' for attr in tw_attrs_editable}
+        shared_task2.tw_task = {attr: '' for attr in tw_attrs_editable}
         shared_task2.tw_task['description'] = 'paint ceilling'
         shared_task2.tw_task['project'] = 'foo'
         shared_task2.tw_task['priority'] = 'h'
@@ -71,7 +102,6 @@ class TestSharedTask(unittest.TestCase):
 
 
 class TestEnhancedTaskWarrior(unittest.TestCase):
-
     def setUp(self):
         self.patcher1 = patch('tasklib.task.TaskWarrior')
         self.MockClass1 = self.patcher1.start()
@@ -86,7 +116,6 @@ class TestEnhancedTaskWarrior(unittest.TestCase):
 
 
 class TestTaskArena(unittest.TestCase):
-
     def setUp(self):
         self.patcher1 = patch('tasklib.task.TaskWarrior')
         self.MockClass1 = self.patcher1.start()
@@ -122,7 +151,6 @@ class TestTaskArena(unittest.TestCase):
 
 
 class TestTaskEmperor(unittest.TestCase):
-
     def setUp(self):
         self.patcher1 = patch('tasklib.task.TaskWarrior')
         self.MockClass1 = self.patcher1.start()
