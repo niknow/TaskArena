@@ -46,13 +46,6 @@ class IOManager(object):
         IOManager.newlines(post_blanks)
         return data
 
-    @staticmethod
-    def execute_command(command_args):
-        p = subprocess.Popen(command_args,
-                             stdin=subprocess.PIPE,
-                             stdout=subprocess.PIPE,
-                             stderr=subprocess.PIPE)
-        p.communicate(input='y\n')
 
     def send_message(self, msg, pre_blanks=0, post_blanks=0):
         if self.show_output:

@@ -22,8 +22,20 @@
 import click
 from tarenalib.arena import uda_config_list
 from tarenalib.io import IOManager
+import subprocess
 
 iom = IOManager()
+
+
+def execute_command(command_args):
+    print(command_args)
+    p = subprocess.Popen(command_args,
+                         stdin=subprocess.PIPE,
+                         stdout=subprocess.PIPE,
+                         stderr=subprocess.PIPE)
+    p.communicate(input='y\n')
+
+
 
 @click.group()
 def cli():
@@ -32,7 +44,9 @@ def cli():
 
 @cli.command(help='Installs TaskArena.')
 def install():
-    iom.send_message('Installing...')
+    for uda in uda_config_list[1:1]:
+        execute_command(['task', 'config', list(uda.keys())[0], uda[list(uda.keys())[0]]])
+    iom.send_message('Installation successful.')
 
 
 @cli.command(help='Uninstalls TaskArena.')
@@ -43,33 +57,43 @@ def uninstall():
 
 @cli.command(help='Creates a new arena.')
 def create():
-    pass
+    iom.send_message("Creating new Arena:.", 1, 1)
 
 
-@cli.command(help='Deletes an arena.')
-@click.argument('name')
-def delete(name):
-    pass
+@cli.command(help='Deletes ARENA.')
+@click.argument('arena')
+def delete(arena):
+    iom.send_message("Deleting arena %s" % arena)
 
 
 @cli.command(help='Lists all arenas.')
-def list(self):
-    pass
+def ls():
+    iom.send_message("TaskArena has the following arenas:", 1, 1)
 
 
-@cli.command(help='Adds tasks to an arena.')
-def add():
- pass
+@cli.command(help='Adds tasks matching PATTERN to ARENA.')
+@click.argument('arena')
+@click.argument('pattern')
+def add(arena, pattern):
+    iom.send_message("The following tasks will be added to %s" % arena)
+    iom.send_message("Applied filter %s" % pattern)
 
 
-@cli.command(help='Removes tasks from an arena.')
-def remove():
-    pass
+@cli.command(help='Removes tasks matching PATTERN from ARENA.')
+@click.argument('arena')
+@click.argument('pattern')
+def remove(arena, pattern):
+    iom.send_message("The following tasks will be removed from %s" % arena)
+    iom.send_message("Applied filter %s" % pattern)
 
 
-@cli.command(help='Synchronizes an arena')
-def sync():
-    pass
+@cli.command(help='Synchronizes ARENA (=all if left blank)')
+@click.argument('arena', nargs=-1)
+def sync(arena):
+    if arena:
+        iom.send_message("Syncing %s" % arena)
+    else:
+        iom.send_message("Syncing everything.")
 
 
 if __name__ == '__main__':
