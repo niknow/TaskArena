@@ -34,7 +34,11 @@ class SyncManager(object):
         for ltask in local_tasks:
             rtask = next((t for t in remote_tasks if t == ltask), None)
             if rtask:
-                self.synclist.append(SyncElement(ltask, rtask, ltask.different_fields(rtask), 'CONFLICT'))
+                self.synclist.append(SyncElement(
+                    ltask,
+                    rtask,
+                    ltask.different_fields(rtask),
+                    'CONFLICT'))
             else:
                 self.synclist.append(SyncElement(ltask, None, None, 'UPLOAD'))
         for rtask in remote_tasks:

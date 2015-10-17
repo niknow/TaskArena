@@ -97,7 +97,9 @@ class SharedTask(object):
         self.tw_task['ArenaTaskID'] = ''
 
     def last_modified(self):
-        return self.tw_task['modified'] if self.tw_task['modified'] else self.tw_task['entry']
+        return self.tw_task['modified'] \
+            if self.tw_task['modified'] \
+            else self.tw_task['entry']
 
     def update(self, other):
         for field in tw_attrs_editable:
@@ -121,7 +123,9 @@ class SharedTask(object):
         return not self.__eq__(other)
 
     def __repr__(self):
-        return str({'Arena': self.Arena.name, 'ArenaTaskID:': self.ArenaTaskID, 'tw_task': self.tw_task.__dict__})
+        return str({'Arena': self.Arena.name,
+                    'ArenaTaskID:': self.ArenaTaskID,
+                    'tw_task': self.tw_task.__dict__})
 
     def __str__(self):
         return str(self.__repr__())
@@ -131,7 +135,8 @@ class SharedTask(object):
 
 
 class EnhancedTaskWarrior(object):
-    """ A task warrior that provides additional functionality for managing tasks in a TaskArena.
+    """ A task warrior that provides additional functionality for managing
+        tasks in a TaskArena.
     """
 
     def __init__(self, tw, arena):
@@ -182,7 +187,9 @@ class TaskArena(object):
     def set_local_data(self, ldata):
         if ldata:
             self._local_data = ldata
-            self.tw_local = EnhancedTaskWarrior(tlib.TaskWarrior(data_location=ldata), self)
+            self.tw_local = EnhancedTaskWarrior(
+                tlib.TaskWarrior(data_location=ldata),
+                self)
 
     local_data = property(get_local_data, set_local_data)
 
@@ -192,7 +199,9 @@ class TaskArena(object):
     def set_remote_data(self, rdata):
         if rdata:
             self._remote_data = rdata
-            self.tw_remote = EnhancedTaskWarrior(tlib.TaskWarrior(data_location=rdata), self)
+            self.tw_remote = EnhancedTaskWarrior(
+                tlib.TaskWarrior(data_location=rdata),
+                self)
 
     remote_data = property(get_remote_data, set_remote_data)
 
@@ -207,7 +216,9 @@ class TaskArena(object):
     json = property(get_json, set_json)
 
     def __repr__(self):
-        return {'name': self.name, 'local_data': self.local_data, 'remote_data': self.remote_data}
+        return {'name': self.name,
+                'local_data': self.local_data,
+                'remote_data': self.remote_data}
 
     def __str__(self):
         return str(self.__repr__())
