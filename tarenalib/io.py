@@ -24,11 +24,11 @@ import os
 
 
 class IOManager(object):
-    def __init__(self, show_output=True, seplength=75):
+    def __init__(self, show_output=True, seplength=75, configfile_name = None):
         self.show_output = show_output
         self.seplength = seplength
+        self._configfile_name = configfile_name
         self.TaskEmperor = TaskEmperor()
-        self.configfile = os.path.expanduser("~") + "\\task_arena_config"
 
     @staticmethod
     def formatted_print(t):
@@ -49,6 +49,17 @@ class IOManager(object):
         IOManager.newlines(post_blanks)
         return data
 
+    def _get_configfile_name(self):
+        return self._configfile_name
+
+    def _set_configfile_name(self, value):
+        if value:
+            self._configfile_name = value
+        else:
+            self._configfile_name = os.path.expanduser("~") + "\\task_arena_config"
+
+    configfile_name = property(_get_configfile_name, _set_configfile_name)
+
     def send_message(self, msg, pre_blanks=0, post_blanks=0):
         if self.show_output:
             IOManager.newlines(pre_blanks)
@@ -58,35 +69,22 @@ class IOManager(object):
     def print_separator(self):
         self.send_message("-" * self.seplength)
 
-    def process_command_args(self, args):
-        if args.command in TaskArenaCommandManager.command_list():
-            self.call_emperor()
-            eval(TaskArenaCommandManager.command_dict()[args.command])
+    def get_configfile_handle(self):
+        if os.path.isfile(self.configfile_name):
+            f = open(self.configfile_name, 'r+')
+            self.send_message("Configfile found at: %s" % self.configfile_name)
+            if self.TaskEmperor.load(f):
+                self.send_message("Configfile loaded.")
+            else:
+                self.send_message("Configfile corrupt.")
+                return None
         else:
-            self.send_message("Invalid command supplied.")
-
-    def call_emperor(self):
-
-        #  if os.path.isfile(self.configfile):
-        #     f = open(self.configfile)
-        #     try:
-        #         self.json = json.load(f)
-        #         return 'loaded'
-        #     except:
-        #         return 'empty'
-        # else:
-        #     open(self.configfile, 'w+')
-        #     return 'new'
-
-        load_result = self.TaskEmperor.load(self.configfile)
-        if load_result == 'loaded':
-            self.send_message("Arenas loaded.")
-        elif load_result == 'empty':
-            self.send_message("Warning: Config file " + self.configfile + " is empty or corrupt.")
-        elif load_result == 'new':
-            self.send_message("New arena config created at " + self.configfile)
-
-
+            f = open(self.configfile_name, 'w+')
+            self.send_message("New configfile created at: %s" % self.configfile_name)
+            self.TaskEmperor.save(f)
+            f.seek(0)
+            self.send_message("Configfile saved.")
+        return f
 
     def get_arena(self, args):
         if args.arena:
@@ -97,8 +95,6 @@ class IOManager(object):
                 self.send_message("Arena " + args.arena + " not found.")
         else:
             self.send_message("You must supply an arena.")
-
-
 
     def list_tasks(self, args, data_location):
         arena = self.get_arena(args)
