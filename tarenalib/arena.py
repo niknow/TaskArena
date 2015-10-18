@@ -24,10 +24,10 @@ import uuid
 import tasklib.task as tlib
 
 uda_config_list = [
-    {'uda.Arena.type': 'string'},
-    {'uda.Arena.label': 'Arena'},
-    {'uda.ArenaTaskID.type': 'string'},
-    {'uda.ArenaTaskID.label': 'ArenaTaskID'},
+    ['uda.Arena.type', 'string'],
+    ['uda.Arena.label', 'Arena'],
+    ['uda.ArenaTaskID.type', 'string'],
+    ['uda.ArenaTaskID.label', 'ArenaTaskID'],
 ]
 
 tw_attrs_editable = [
@@ -143,7 +143,7 @@ class EnhancedTaskWarrior(object):
         self.tw = tw
         self.arena = arena
         for uda in uda_config_list:
-            self.tw.config.update(uda)
+            self.tw.config.update({uda[0]: uda[1]})
 
     def tasks(self, pattern):
         return [SharedTask(task, self.arena) for task in

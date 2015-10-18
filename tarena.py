@@ -46,7 +46,7 @@ def cli():
 @cli.command(help='Installs TaskArena.')
 def install():
     for uda in uda_config_list:
-        execute_command(['task', 'config', (list(uda.keys())[0]), (uda[list(uda.keys())[0]])])
+        execute_command(['task', 'config', uda[0], uda[1]])
     iom.send_message('Installation successful.')
     return 0
 
