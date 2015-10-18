@@ -61,7 +61,15 @@ def uninstall():
 
 @cli.command(help='Creates a new arena.')
 def create():
-    iom.send_message("Creating new Arena:.", 1, 1)
+    iom.send_message("Creating new Arena:")
+    name = iom.get_input('Enter a name: ')
+    ldata = iom.get_input('Enter local data.location: ')
+    rdata = iom.get_input('Enter remote data.location: ')
+    if iom.TaskEmperor.create_arena(name, ldata, rdata):
+        iom.send_message("Arena " + name + " created.")
+        iom.TaskEmperor.save()  # todo enter file handle here
+    else:
+        iom.send_message("Arena " + name + " already exists!")
     return 0
 
 

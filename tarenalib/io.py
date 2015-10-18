@@ -42,10 +42,12 @@ class IOManager(object):
     @staticmethod
     def get_input(msg, pre_blanks=0, post_blanks=0):
         IOManager.newlines(pre_blanks)
-        data = raw_input(msg)
+        try: # Python 2
+            data = raw_input(msg)
+        except NameError:   # Python 3
+            data = input(msg)
         IOManager.newlines(post_blanks)
         return data
-
 
     def send_message(self, msg, pre_blanks=0, post_blanks=0):
         if self.show_output:
