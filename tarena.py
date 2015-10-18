@@ -23,18 +23,19 @@ import click
 from tarenalib.arena import uda_config_list
 from tarenalib.io import IOManager
 import subprocess
+import locale
 
 iom = IOManager()
 
 
 def execute_command(command_args):
-    print(command_args)
     p = subprocess.Popen(command_args,
                          stdin=subprocess.PIPE,
                          stdout=subprocess.PIPE,
-                         stderr=subprocess.PIPE)
-    p.communicate(input='y\n')
-
+                         stderr=subprocess.PIPE,
+                         )
+    encoding = locale.getdefaultlocale()[1]
+    p.communicate(input='y\n'.encode(encoding))
 
 
 @click.group()
@@ -44,8 +45,8 @@ def cli():
 
 @cli.command(help='Installs TaskArena.')
 def install():
-    for uda in uda_config_list[1:1]:
-        execute_command(['task', 'config', list(uda.keys())[0], uda[list(uda.keys())[0]]])
+    for uda in uda_config_list:
+        execute_command(['task', 'config', (list(uda.keys())[0]), (uda[list(uda.keys())[0]])])
     iom.send_message('Installation successful.')
     return 0
 
