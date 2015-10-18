@@ -53,7 +53,9 @@ def install():
 
 @cli.command(help='Uninstalls TaskArena.')
 def uninstall():
-    click.echo('Uninstalling')
+    for uda in uda_config_list:
+        execute_command(['task', 'config', uda[0]])
+    iom.send_message('Uninstallation successful.')
     return 0
 
 
