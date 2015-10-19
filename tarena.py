@@ -81,10 +81,19 @@ def delete(arena):
     iom.send_message("Deleting arena %s" % arena)
     return 0
 
+
 @cli.command(help='Lists all arenas.')
 def ls():
-    iom.send_message("TaskArena has the following arenas:", 1, 1)
-    return 0
+    te = iom.get_task_emperor()
+    if te.arenas:
+        iom.send_message("The following arenas are available:", 1)
+        for arena in te.arenas:
+            iom.send_message(arena.name, 1)
+            iom.send_message("local : " + arena.local_data)
+            iom.send_message("remote: " + arena.remote_data, 0, 1)
+    else:
+        iom.send_message("No arenas found.")
+
 
 @cli.command(help='Adds tasks matching PATTERN to ARENA.')
 @click.argument('arena')
