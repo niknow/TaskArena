@@ -105,9 +105,14 @@ def ls():
 @click.argument('arena')
 @click.argument('pattern')
 def add(arena, pattern):
-    iom.send_message("The following tasks will be added to %s" % arena)
-    iom.send_message("Applied filter %s" % pattern)
-    return 0
+    te = iom.get_task_emperor()
+    arena_found = te.find(arena)
+    if arena_found:
+        arena_found.tw_local.add_tasks_matching_pattern(pattern.split())
+        iom.send_message("Tasks added.")
+    else:
+        iom.send_message("Arena %s not found." % arena)
+    iom.save_task_emperor(te)
 
 
 @cli.command(help='Removes tasks matching PATTERN from ARENA.')
