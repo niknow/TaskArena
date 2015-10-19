@@ -78,8 +78,14 @@ def create():
 @cli.command(help='Deletes ARENA.')
 @click.argument('arena')
 def delete(arena):
-    iom.send_message("Deleting arena %s" % arena)
-    return 0
+    te = iom.get_task_emperor()
+    arena_found = te.find(arena)
+    if arena_found:
+        te.delete_arena(arena_found)
+        iom.save_task_emperor(te)
+        iom.send_message("Arena " + arena_found.name + " deleted.")
+    else:
+        iom.send_message("Arena " + arena + "not found.")
 
 
 @cli.command(help='Lists all arenas.')
