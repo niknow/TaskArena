@@ -28,7 +28,6 @@ class IOManager(object):
         self.show_output = show_output
         self.seplength = seplength
         self._configfile_name = configfile_name
-        self.TaskEmperor = TaskEmperor()
 
     @staticmethod
     def formatted_print(t):
@@ -69,11 +68,12 @@ class IOManager(object):
     def print_separator(self):
         self.send_message("-" * self.seplength)
 
-    def get_configfile_handle(self):
+    def get_task_emperor(self):
+        te = TaskEmperor()
         if os.path.isfile(self.configfile_name):
-            f = open(self.configfile_name, 'r+')
+            f = open(self.configfile_name, 'r')
             self.send_message("Configfile found at: %s" % self.configfile_name)
-            if self.TaskEmperor.load(f):
+            if te.load(f):
                 self.send_message("Configfile loaded.")
             else:
                 self.send_message("Configfile corrupt.")
@@ -81,10 +81,16 @@ class IOManager(object):
         else:
             f = open(self.configfile_name, 'w+')
             self.send_message("New configfile created at: %s" % self.configfile_name)
-            self.TaskEmperor.save(f)
-            f.seek(0)
+            te.save(f)
             self.send_message("Configfile saved.")
-        return f
+        f.close()
+        return te
+
+    def save_task_emperor(self, te):
+        f = open(self.configfile_name, 'w+')
+        te.save(f)
+        self.send_message("Saved.")
+        f.close()
 
     def get_arena(self, args):
         if args.arena:
