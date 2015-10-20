@@ -110,18 +110,23 @@ def add(arena, pattern):
     if arena_found:
         arena_found.tw_local.add_tasks_matching_pattern(pattern.split())
         iom.send_message("Tasks added.")
+        iom.save_task_emperor(te)
     else:
         iom.send_message("Arena %s not found." % arena)
-    iom.save_task_emperor(te)
 
 
 @cli.command(help='Removes tasks matching PATTERN from ARENA.')
 @click.argument('arena')
 @click.argument('pattern')
 def remove(arena, pattern):
-    iom.send_message("The following tasks will be removed from %s" % arena)
-    iom.send_message("Applied filter %s" % pattern)
-    return 0
+    te = iom.get_task_emperor()
+    arena_found = te.find(arena)
+    if arena_found:
+        arena_found.tw_local.remove_tasks_matching_pattern(pattern)
+        iom.send_message("Tasks removed from " + arena_found + " .")
+        iom.save_task_emperor(te)
+    else:
+        iom.send_message("Arena %s not found." % arena)
 
 
 @cli.command(help='Synchronizes ARENA (=all if left blank)')
