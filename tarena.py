@@ -89,7 +89,7 @@ def delete(arena):
 
 
 @cli.command(help='Lists all arenas.')
-def ls():
+def arenas():
     te = iom.get_task_emperor()
     if te.arenas:
         iom.send_message("The following arenas are available:", 1)
@@ -123,10 +123,45 @@ def remove(arena, pattern):
     arena_found = te.find(arena)
     if arena_found:
         arena_found.tw_local.remove_tasks_matching_pattern(pattern)
-        iom.send_message("Tasks removed from " + arena_found + " .")
+        iom.send_message("Tasks removed from " + arena_found.name + ".")
         iom.save_task_emperor(te)
     else:
         iom.send_message("Arena %s not found." % arena)
+
+
+@cli.command(help='Lists all local tasks matching PATTERN from ARENA.')
+@click.argument('arena')
+@click.argument('pattern', nargs=-1)
+def local(arena, pattern):
+    te = iom.get_task_emperor()
+    arena_found = te.find(arena)
+    if arena_found:
+        list_tasks(arena_found, pattern, arena_found.local_data)
+    else:
+        iom.send_message("Arena %s not found." % arena)
+
+
+@cli.command(help='Lists all remote tasks matching PATTERN from ARENA.')
+@click.argument('arena')
+@click.argument('pattern', nargs=-1)
+def remote(arena, pattern):
+    te = iom.get_task_emperor()
+    arena_found = te.find(arena)
+    if arena_found:
+        list_tasks(arena_found, pattern, arena_found.remote_data)
+    else:
+        iom.send_message("Arena %s not found." % arena)
+
+
+def list_tasks(arena, pattern, data_location):
+    p = subprocess.Popen(
+        ['task',
+         'rc.data.location:' + data_location,
+         'Arena:' + arena.name,
+         pattern],
+        stderr=subprocess.PIPE
+    )
+    p.communicate()
 
 
 @cli.command(help='Synchronizes ARENA (=all if left blank)')

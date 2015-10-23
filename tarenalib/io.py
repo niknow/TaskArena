@@ -101,16 +101,3 @@ class IOManager(object):
                 self.send_message("Arena " + args.arena + " not found.")
         else:
             self.send_message("You must supply an arena.")
-
-    def list_tasks(self, args, data_location):
-        arena = self.get_arena(args)
-        if arena:
-            p = subprocess.Popen(['task',
-                                  'rc.data.location:' + eval('arena.' + data_location),
-                                  'Arena:' + arena.name,
-                                  args.filter],
-                                 stderr=subprocess.PIPE)
-            p.communicate()
-
-
-
