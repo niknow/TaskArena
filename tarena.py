@@ -22,6 +22,7 @@
 import click
 from tarenalib.arena import uda_config_list
 from tarenalib.io import IOManager
+from tarenalib.sync import SyncManager
 import subprocess
 import locale
 
@@ -77,9 +78,10 @@ def create():
 
 class FoundArena(object):
 
-    def __init__(self, arena, task_emperor):
+    def __init__(self, arena, task_emperor, sync_manager):
         self.arena = arena
         self.te = task_emperor
+        self.sm = sync_manager
 
 
 def find_arena(ctx, param, value):
@@ -89,7 +91,7 @@ def find_arena(ctx, param, value):
         iom.send_message("Arena " + value + " not found.")
         return None
     else:
-        return FoundArena(arena, te)
+        return FoundArena(arena, te,  SyncManager(arena, iom))
 
 
 @cli.command(help='Deletes ARENA.')
@@ -163,7 +165,9 @@ def list_tasks(arena, pattern, data_location):
 @click.argument('found_arena', callback=find_arena)
 def sync(found_arena):
     if found_arena:
-        iom.send_message("Syncing %s" % found_arena.arena.name)
+        found_arena.sm.generate_synclist()
+        found_arena.sm.suggest_conflict_resolution()
+        found_arena.sm.process_user_modified_synclist()
 
 
 if __name__ == '__main__':

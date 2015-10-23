@@ -40,7 +40,7 @@ tw_attrs_editable = [
     'parent',
     'priority',
     'project',
-    'recur',
+#    'recur',
     'scheduled',
     'start',
     'status',
