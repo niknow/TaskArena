@@ -75,17 +75,30 @@ def create():
         return 0
 
 
-@cli.command(help='Deletes ARENA.')
-@click.argument('arena')
-def delete(arena):
+class FoundArena(object):
+
+    def __init__(self, arena, task_emperor):
+        self.arena = arena
+        self.te = task_emperor
+
+
+def find_arena(ctx, param, value):
     te = iom.get_task_emperor()
-    arena_found = te.find(arena)
-    if arena_found:
-        te.delete_arena(arena_found)
-        iom.save_task_emperor(te)
-        iom.send_message("Arena " + arena_found.name + " deleted.")
+    arena = te.find(value)
+    if not arena:
+        iom.send_message("Arena " + value + " not found.")
+        return None
     else:
-        iom.send_message("Arena " + arena + "not found.")
+        return FoundArena(arena, te)
+
+
+@cli.command(help='Deletes ARENA.')
+@click.argument('found_arena', callback=find_arena)
+def delete(found_arena):
+    if found_arena:
+        found_arena.te.delete_arena(found_arena.arena)
+        iom.save_task_emperor(found_arena.te)
+        iom.send_message("Arena " + found_arena.arena.name + " deleted.")
 
 
 @cli.command(help='Lists all arenas.')
@@ -102,55 +115,37 @@ def arenas():
 
 
 @cli.command(help='Adds tasks matching PATTERN to ARENA.')
-@click.argument('arena')
+@click.argument('found_arena', callback=find_arena)
 @click.argument('pattern')
-def add(arena, pattern):
-    te = iom.get_task_emperor()
-    arena_found = te.find(arena)
-    if arena_found:
-        arena_found.tw_local.add_tasks_matching_pattern(pattern.split())
+def add(found_arena, pattern):
+    if found_arena:
+        found_arena.arena.tw_local.add_tasks_matching_pattern(pattern.split())
         iom.send_message("Tasks added.")
-        iom.save_task_emperor(te)
-    else:
-        iom.send_message("Arena %s not found." % arena)
 
 
 @cli.command(help='Removes tasks matching PATTERN from ARENA.')
-@click.argument('arena')
+@click.argument('found_arena', callback=find_arena)
 @click.argument('pattern')
-def remove(arena, pattern):
-    te = iom.get_task_emperor()
-    arena_found = te.find(arena)
-    if arena_found:
-        arena_found.tw_local.remove_tasks_matching_pattern(pattern)
-        iom.send_message("Tasks removed from " + arena_found.name + ".")
-        iom.save_task_emperor(te)
-    else:
-        iom.send_message("Arena %s not found." % arena)
+def remove(found_arena, pattern):
+    if found_arena:
+        found_arena.arena.tw_local.remove_tasks_matching_pattern(pattern)
+        iom.send_message("Tasks removed from " + found_arena.arena.name + ".")
 
 
 @cli.command(help='Lists all local tasks matching PATTERN from ARENA.')
-@click.argument('arena')
+@click.argument('found_arena', callback=find_arena)
 @click.argument('pattern', nargs=-1)
-def local(arena, pattern):
-    te = iom.get_task_emperor()
-    arena_found = te.find(arena)
-    if arena_found:
-        list_tasks(arena_found, pattern, arena_found.local_data)
-    else:
-        iom.send_message("Arena %s not found." % arena)
+def local(found_arena, pattern):
+    if found_arena:
+        list_tasks(found_arena.arena, pattern, found_arena.arena.local_data)
 
 
 @cli.command(help='Lists all remote tasks matching PATTERN from ARENA.')
-@click.argument('arena')
+@click.argument('found_arena', callback=find_arena)
 @click.argument('pattern', nargs=-1)
-def remote(arena, pattern):
-    te = iom.get_task_emperor()
-    arena_found = te.find(arena)
-    if arena_found:
-        list_tasks(arena_found, pattern, arena_found.remote_data)
-    else:
-        iom.send_message("Arena %s not found." % arena)
+def remote(found_arena, pattern):
+    if found_arena:
+        list_tasks(found_arena.arena, pattern, found_arena.arena.remote_data)
 
 
 def list_tasks(arena, pattern, data_location):
@@ -164,14 +159,11 @@ def list_tasks(arena, pattern, data_location):
     p.communicate()
 
 
-@cli.command(help='Synchronizes ARENA (=all if left blank)')
-@click.argument('arena', nargs=-1)
-def sync(arena):
-    if arena:
-        iom.send_message("Syncing %s" % arena)
-    else:
-        iom.send_message("Syncing everything.")
-    return 0
+@cli.command(help='Synchronizes ARENA')
+@click.argument('found_arena', callback=find_arena)
+def sync(found_arena):
+    if found_arena:
+        iom.send_message("Syncing %s" % found_arena.arena.name)
 
 
 if __name__ == '__main__':
