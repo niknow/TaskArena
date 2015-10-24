@@ -147,7 +147,7 @@ class EnhancedTaskWarrior(object):
 
     def tasks(self, pattern):
         return [SharedTask(task, self.arena) for task in
-                self.tw.tasks.filter(' '.join(pattern))]
+                self.tw.tasks.filter(*pattern)]
 
     def add_task(self, task):
         t = SharedTask(tlib.Task(self.tw), self.arena)
@@ -162,7 +162,7 @@ class EnhancedTaskWarrior(object):
         return tasks
 
     def remove_tasks_matching_pattern(self, pattern):
-        tasks = self.tasks([pattern, 'Arena:' + self.arena.name])
+        tasks = self.tasks(list(pattern) + ['Arena:' + self.arena.name])
         for ta_task in tasks:
             ta_task.remove()
             ta_task.save()

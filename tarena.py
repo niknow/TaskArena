@@ -118,16 +118,16 @@ def arenas():
 
 @cli.command(help='Adds tasks matching PATTERN to ARENA.')
 @click.argument('found_arena', callback=find_arena)
-@click.argument('pattern')
+@click.argument('pattern', nargs=-1)
 def add(found_arena, pattern):
     if found_arena:
-        found_arena.arena.tw_local.add_tasks_matching_pattern(pattern.split())
+        found_arena.arena.tw_local.add_tasks_matching_pattern(pattern)
         iom.send_message("Tasks added.")
 
 
 @cli.command(help='Removes tasks matching PATTERN from ARENA.')
 @click.argument('found_arena', callback=find_arena)
-@click.argument('pattern')
+@click.argument('pattern', nargs=-1)
 def remove(found_arena, pattern):
     if found_arena:
         found_arena.arena.tw_local.remove_tasks_matching_pattern(pattern)
