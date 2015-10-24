@@ -19,36 +19,47 @@
 
 
 import unittest
+from unittest.mock import patch
+import tasklib.task as tlib
 
 from tarenalib.sync import SyncElement, SyncManager
-from tarenalib.arena import SharedTask
+from tarenalib.arena import SharedTask, TaskArena
+from tarenalib.io import IOManager
+
+
+def last_modified_mock():
+    last_modified_mock.c += 1
+    return last_modified_mock.c
+last_modified_mock.c = 0
 
 
 class TestSyncManager(unittest.TestCase):
 
+    def setUp(self):
+        self.patcher1 = patch('tasklib.task.TaskWarrior')
+        self.MockClass1 = self.patcher1.start()
+
+    def tearDown(self):
+        self.patcher1.stop()
+
+    def create_shared_task(self, arena, description):
+        shared_task = SharedTask(tlib.Task(tlib.TaskWarrior()))
+        shared_task.Arena = arena
+        shared_task.tw_task['description'] = description
+        return shared_task
+
     def test_create_synclist(self):
-        arena = self.create_local_arena()
-        task_description = 'paint walls'
-        self.create_task(arena.tw_local.tw, task_description)
-        arena.add(task_description)
-        task_description = 'clean floor'
-        self.create_task(arena.tw_local.tw, task_description)
-        arena.add(task_description)
-        remote_arena = self.create_remote_arena()
-        task_description = 'paint ceiling'
-        self.create_task(remote_arena.tw_local.tw, task_description)
-        remote_arena.add(task_description)
-        task_description = 'clean floor'
-        self.create_task(remote_arena.tw_local.tw, task_description)
-        remote_arena.add(task_description)
-        ltask = arena.tw_local.tasks('clean floor')[0]
-        rtask = remote_arena.tw_local.tasks('clean floor')[0]
-        ltask.ArenaTaskID = 1
-        rtask.ArenaTaskID = 1
-        ltask.save()
-        rtask.save()
-        sm = SyncManager(arena)
-        sm.generate_synclist()
+        arena = TaskArena('my_arena', 'local', 'remote')
+        ltask1 = self.create_shared_task(arena, 'paint walls')
+        ltask2 = self.create_shared_task(arena, 'clean floor')
+        rtask1 = self.create_shared_task(arena, 'paint ceilling')
+        rtask2 = self.create_shared_task(arena, 'clean floor')
+        ltask1.ArenaTaskID = 1
+        rtask1.ArenaTaskID = 1
+        local_tasks = [ltask1, ltask2]
+        remote_tasks = [rtask1, rtask2]
+        sm = SyncManager(arena, IOManager(False))
+        sm.generate_synclist(local_tasks, remote_tasks)
         num_uploads = len([e for e in sm.synclist if e.suggestion == 'UPLOAD'])
         num_downloads = len([e for e in sm.synclist if e.suggestion == 'DOWNLOAD'])
         num_conflicts = len([e for e in sm.synclist if e.suggestion == 'CONFLICT'])
@@ -56,40 +67,56 @@ class TestSyncManager(unittest.TestCase):
         self.assertEqual(num_downloads, 1)
         self.assertEqual(num_conflicts, 1)
 
-    def test_suggest_conflict_resolution(self):
-        arena = self.create_local_arena()
-        syncmanager = SyncManager(arena)
-        ltask1 = SharedTask(self.create_task(arena.tw_local.tw, 'paint walls'), arena)
-        ltask2 = SharedTask(self.create_task(arena.tw_local.tw, 'clean floor'), arena)
-        rtask1 = SharedTask(self.create_task(arena.tw_remote.tw, 'paint ceiling'), arena)
-        rtask2 = SharedTask(self.create_task(arena.tw_remote.tw, 'clean floor'), arena)
+    @patch.object(SharedTask, 'last_modified', side_effect=last_modified_mock)
+    def test_suggest_conflict_resolution(self, mock_last_modified):
+        arena = TaskArena('my_arena', 'local', 'remote')
+        ltask1 = self.create_shared_task(arena, 'paint walls')
+        ltask2 = self.create_shared_task(arena, 'clean floor')
+        ltask3 = self.create_shared_task(arena, 'do dishes')
+        rtask1 = self.create_shared_task(arena, 'paint ceilling')
+        rtask2 = self.create_shared_task(arena, 'clean floor')
+        rtask3 = self.create_shared_task(arena, 'do dishes')
+        ltask1.ArenaTaskID = 1
+        ltask2.ArenaTaskID = 2
+        ltask3.ArenaTaskID = 4
+        rtask1.ArenaTaskID = 3
+        rtask2.ArenaTaskID = 2
+        rtask3.ArenaTaskID = 4
+        rtask3.tw_task['priority'] = 'H'
         synclist = [SyncElement(ltask1, None, None, 'UPLOAD'),
                     SyncElement(ltask2, rtask2, ltask2.different_fields(rtask2), 'CONFLICT'),
-                    SyncElement(None, rtask1, None, 'DOWNLOAD')]
-        syncmanager.synclist = synclist
-        syncmanager.suggest_conflict_resolution()
-        num_uploads = len([x for x in syncmanager.synclist if x.suggestion == 'UPLOAD'])
-        num_downloads = len([x for x in syncmanager.synclist if x.suggestion == 'DOWNLOAD'])
+                    SyncElement(None, rtask1, None, 'DOWNLOAD'),
+                    SyncElement(ltask3, rtask3, ltask3.different_fields(rtask3), 'CONFLICT')]
+        sm = SyncManager(arena, IOManager(False))
+        sm.synclist = synclist
+        sm.suggest_conflict_resolution()
+        num_total = len(sm.synclist)
+        num_uploads = len([x for x in sm.synclist if x.suggestion == 'UPLOAD'])
+        num_downloads = len([x for x in sm.synclist if x.suggestion == 'DOWNLOAD'])
+        self.assertEqual(num_total, 3)
         self.assertEqual(num_uploads, 1)
-        self.assertEqual(num_downloads, 1)
+        self.assertEqual(num_downloads, 2)
 
-    def test_carry_out_sync(self):
-        arena = self.create_local_arena()
-        syncmanager = SyncManager(arena)
-        ltask1 = SharedTask(self.create_task(arena.tw_local.tw, 'paint walls'), arena)
-        ltask2 = SharedTask(self.create_task(arena.tw_local.tw, 'clean floor'), arena)
-        rtask1 = SharedTask(self.create_task(arena.tw_remote.tw, 'paint ceiling'), arena)
-        rtask2 = SharedTask(self.create_task(arena.tw_remote.tw, 'clean floor'), arena)
-        ltask2.tw_task['priority'] = 'h'
-        ltask2.save()
-        synclist = [SyncElement(ltask1, None, None, 'UPLOAD', 'UPLOAD'),
-                    SyncElement(ltask2, rtask2, ltask2.different_fields(rtask2), 'CONFLICT', 'UPLOAD'),
-                    SyncElement(None, rtask1, None, 'DOWNLOAD', 'DOWNLOAD'), ]
-        syncmanager.synclist = synclist
-        syncmanager.carry_out_sync()
-        self.assertEqual(len(arena.tw_remote.tasks(['paint walls'])), 1)
-        self.assertEqual(len(arena.tw_remote.tasks(['clean floor'])), 1)
-        self.assertEqual(len(arena.tw_remote.tasks(['clean floor', 'pri:h'])), 1)
-        self.assertEqual(len(arena.tw_local.tasks(['clean floor'])), 1)
-        for elem in syncmanager.synclist:
-            self.assertEqual(elem.local_task.ArenaTaskID, elem.local_task.ArenaTaskID)
+    @patch.object(SharedTask, 'save')
+    def test_carry_out_sync(self, mock_save):
+        arena = TaskArena('my_arena', 'local', 'remote')
+        ltask1 = self.create_shared_task(arena, 'paint walls')
+        ltask3 = self.create_shared_task(arena, 'do dishes')
+        rtask1 = self.create_shared_task(arena, 'paint ceilling')
+        rtask3 = self.create_shared_task(arena, 'do dishes')
+        ltask1.ArenaTaskID = 1
+        ltask3.ArenaTaskID = 4
+        rtask1.ArenaTaskID = 3
+        rtask3.ArenaTaskID = 4
+        rtask3.tw_task['priority'] = 'H'
+        synclist = [SyncElement(ltask1, None, None, None, 'UPLOAD'),
+                    SyncElement(None, rtask1, None, None, 'DOWNLOAD'),
+                    SyncElement(ltask3, rtask3, None, None, 'DOWNLOAD')]
+        sm = SyncManager(arena, IOManager(False))
+        sm.synclist = synclist
+        sm.carry_out_sync()
+        self.assertEqual(synclist[0].local_task, synclist[0].remote_task)
+        self.assertEqual(synclist[1].local_task, synclist[1].remote_task)
+        self.assertEqual(synclist[2].local_task, synclist[2].remote_task)
+        self.assertEqual(synclist[2].local_task.tw_task['priority'],
+                         synclist[2].remote_task.tw_task['priority'])

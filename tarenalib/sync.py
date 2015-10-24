@@ -31,9 +31,7 @@ class SyncManager(object):
     def synclist_not_skipped(self):
         return [e for e in self.synclist if e.suggestion != 'SKIP']
 
-    def generate_synclist(self):
-        local_tasks = self.arena.get_local_tasks()
-        remote_tasks = self.arena.get_remote_tasks()
+    def generate_synclist(self, local_tasks, remote_tasks):
         for ltask in local_tasks:
             rtask = next((t for t in remote_tasks if t == ltask), None)
             if rtask:
@@ -84,6 +82,12 @@ class SyncManager(object):
         if self.synclist:
             self.carry_out_sync()
             self.siom.iom.send_message("Sync complete.", 1, 1)
+
+    def sync(self):
+        self.generate_synclist(self.arena.get_local_tasks(),
+                               self.arena.get_remote_tasks())
+        self.suggest_conflict_resolution()
+        self.process_user_modified_synclist()
 
     def __repr__(self):
         return str({'arena:': self.arena.__str__(),

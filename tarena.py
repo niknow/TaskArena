@@ -165,9 +165,7 @@ def list_tasks(arena, pattern, data_location):
 @click.argument('found_arena', callback=find_arena)
 def sync(found_arena):
     if found_arena:
-        found_arena.sm.generate_synclist()
-        found_arena.sm.suggest_conflict_resolution()
-        found_arena.sm.process_user_modified_synclist()
+        found_arena.sm.sync()
 
 
 if __name__ == '__main__':
