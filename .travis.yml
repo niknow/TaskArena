@@ -1,8 +1,18 @@
 language: python
+env:
+  - TASK_VERSION=v2.4.4
 python:
   - "3.4"
 install:
   - pip install coveralls
+  - git clone https://git.tasktools.org/scm/tm/task.git
+  - cd task
+  - git checkout $TASK_VERSION
+  - git clean -dfx
+  - cmake .
+  - make
+  - sudo make install
+  - task --version
 script:
   coverage run --source=tarenalib setup.py test
 after_success:
