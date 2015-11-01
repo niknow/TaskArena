@@ -21,51 +21,98 @@
 
 from click.testing import CliRunner
 import unittest
-from tarena import (
-    install,
-    uninstall,
-    create,
-    delete,
-    ls,
-    add,
-    remove,
-    sync,
-)
+from tarenalib.arena import uda_config_list
+from tarena import cli
+from tasklib.task import TaskWarrior, Task
+import os
+
+
+cmd = ['--file', 'taconfig']
+cmd_dummy_arena = ['--file', 'taconfig', 'create',
+                   '--name', 'foo',
+                   '--ldata', 'local',
+                   '--rdata', 'remote']
 
 
 class TestTArena(unittest.TestCase):
-
     def setUp(self):
-        self.runner = runner = CliRunner()
+        self.runner = CliRunner()
 
     def test_install(self):
-        result = self.runner.invoke(install)
+        with self.runner.isolated_filesystem():
+            result = self.runner.invoke(cli, ['install'])
         assert result.exit_code == 0
 
     def test_uninstall(self):
-        result = self.runner.invoke(uninstall)
+        with self.runner.isolated_filesystem():
+            result = self.runner.invoke(cli, ['uninstall'])
         assert result.exit_code == 0
 
     def test_create(self):
-        result = self.runner.invoke(create)
+        with self.runner.isolated_filesystem():
+            result = self.runner.invoke(cli, cmd_dummy_arena)
         assert result.exit_code == 0
 
     def test_delete(self):
-        result = self.runner.invoke(delete, ['housework'])
-        assert result.exit_code == 0
+        with self.runner.isolated_filesystem():
+            self.runner.invoke(cli, cmd_dummy_arena)
+            result_delete = self.runner.invoke(cli, cmd + ['delete', 'foo'])
+            result_check = self.runner.invoke(cli, cmd + ['arenas'])
+            assert result_delete.exit_code == 0
+            assert 'No arenas found' in result_check.output
 
-    def test_ls(self):
-        result = self.runner.invoke(ls)
-        assert result.exit_code == 0
+    def test_arenas(self):
+        with self.runner.isolated_filesystem():
+            result = self.runner.invoke(cli, cmd + ['arenas'])
+            assert 'No arenas found' in result.output
+            self.runner.invoke(cli, cmd_dummy_arena)
+            result = self.runner.invoke(cli, cmd + ['arenas'])
+            assert 'foo' in result.output
+            assert result.exit_code == 0
 
     def test_add(self):
-        result = self.runner.invoke(add, ['housework', 'pro:housework'])
-        assert result.exit_code == 0
+        with self.runner.isolated_filesystem():
+            dloc = '/cygdrive/c'+os.getcwd().replace('\\', '/')[2:] \
+                   + '/local'
+            tw = TaskWarrior(dloc)
+            t = Task(tw)
+            description = 'do dishes'
+            t['description'] = description
+            t.save()
+            self.runner.invoke(cli, cmd_dummy_arena)
+            self.runner.invoke(cli, cmd + ['add', 'foo', description])
+            for uda in uda_config_list:
+                tw.config.update({uda[0]: uda[1]})
+            assert len(tw.tasks.filter('Arena:foo')) == 1
 
     def test_remove(self):
-        result = self.runner.invoke(remove, ['housework', 'pro:housework'])
-        assert result.exit_code == 0
+        with self.runner.isolated_filesystem():
+            dloc = '/cygdrive/c'+os.getcwd().replace('\\', '/')[2:] \
+                   + '/local'
+            tw = TaskWarrior(dloc)
+            t = Task(tw)
+            description = 'do dishes'
+            t['description'] = description
+            t.save()
+            self.runner.invoke(cli, cmd_dummy_arena)
+            self.runner.invoke(cli, cmd + ['add', 'foo', description])
+            self.runner.invoke(cli, cmd + ['remove', 'foo', description])
+            for uda in uda_config_list:
+                tw.config.update({uda[0]: uda[1]})
+            assert len(tw.tasks.filter('Arena:foo')) == 0
 
     def test_sync(self):
-        result = self.runner.invoke(sync)
-        assert result.exit_code == 0
+        with self.runner.isolated_filesystem():
+            cwd = '/cygdrive/c'+os.getcwd().replace('\\', '/')[2:]
+            dloc = cwd + '/local'
+            dremote = cwd + '/remote'
+            tw_local = TaskWarrior(dloc)
+            tw_remote = TaskWarrior(dremote)
+            t = Task(tw_local)
+            description = 'do dishes'
+            t['description'] = description
+            t.save()
+            self.runner.invoke(cli, cmd_dummy_arena)
+            self.runner.invoke(cli, cmd + ['add', 'foo', description])
+            result = self.runner.invoke(cli, cmd + ['sync', 'foo'], input='a\n')
+            assert len(tw_remote.tasks.filter()) == 1

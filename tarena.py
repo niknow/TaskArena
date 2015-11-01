@@ -28,6 +28,7 @@ import locale
 
 iom = IOManager()
 
+
 def execute_command(command_args):
     p = subprocess.Popen(command_args,
                          stdin=subprocess.PIPE,
@@ -49,7 +50,6 @@ def install():
     for uda in uda_config_list:
         execute_command(['task', 'config', uda[0], uda[1]])
     iom.send_message('Installation successful.')
-    return 0
 
 
 @cli.command(help='Uninstalls TaskArena.')
@@ -57,23 +57,20 @@ def uninstall():
     for uda in uda_config_list:
         execute_command(['task', 'config', uda[0]])
     iom.send_message('Uninstallation successful.')
-    return 0
 
 
 @cli.command(help='Creates a new arena.')
-def create():
+@click.option('--name', prompt='Enter a name: ')
+@click.option('--ldata', prompt='Enter local data.location: ')
+@click.option('--rdata', prompt='Enter remote data.location: ')
+def create(name, ldata, rdata):
     te = iom.get_task_emperor()
     if te:
-        iom.send_message("Creating new Arena:")
-        name = iom.get_input('Enter a name: ')
-        ldata = iom.get_input('Enter local data.location: ')
-        rdata = iom.get_input('Enter remote data.location: ')
         if te.create_arena(name, ldata, rdata):
             iom.send_message("Arena " + name + " created.")
             iom.save_task_emperor(te)
         else:
             iom.send_message("Arena " + name + " already exists!")
-        return 0
 
 
 class FoundArena(object):
