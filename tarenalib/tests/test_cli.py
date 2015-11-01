@@ -22,7 +22,7 @@
 from click.testing import CliRunner
 import unittest
 from tarenalib.arena import uda_config_list
-from tarena import cli
+from tarenalib.cli import cli
 from tasklib.task import TaskWarrior, Task
 import os
 

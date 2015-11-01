@@ -15,4 +15,8 @@ setup(
     packages=find_packages(),
     install_requires=['tasklib', 'click'],
     test_suite='tarenalib.tests',
+    entry_points='''
+        [console_scripts]
+        tarena=tarenalib.cli:cli
+    ''',
 )
