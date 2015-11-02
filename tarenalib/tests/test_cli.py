@@ -72,8 +72,7 @@ class TestTArena(unittest.TestCase):
 
     def test_add(self):
         with self.runner.isolated_filesystem():
-            dloc = '/cygdrive/c'+os.getcwd().replace('\\', '/')[2:] \
-                   + '/local'
+            dloc = os.getcwd() + '/local'
             tw = TaskWarrior(dloc)
             t = Task(tw)
             description = 'do dishes'
@@ -87,8 +86,7 @@ class TestTArena(unittest.TestCase):
 
     def test_remove(self):
         with self.runner.isolated_filesystem():
-            dloc = '/cygdrive/c'+os.getcwd().replace('\\', '/')[2:] \
-                   + '/local'
+            dloc = os.getcwd() + '/local'
             tw = TaskWarrior(dloc)
             t = Task(tw)
             description = 'do dishes'
@@ -103,7 +101,7 @@ class TestTArena(unittest.TestCase):
 
     def test_sync(self):
         with self.runner.isolated_filesystem():
-            cwd = '/cygdrive/c'+os.getcwd().replace('\\', '/')[2:]
+            cwd = os.getcwd()
             dloc = cwd + '/local'
             dremote = cwd + '/remote'
             tw_local = TaskWarrior(dloc)
