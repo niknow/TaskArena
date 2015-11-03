@@ -23,14 +23,18 @@ import os
 
 
 class IOManager(object):
-    def __init__(self, show_output=True, seplength=75, configfile_name = None):
+
+    def __init__(self, show_output=True, seplength=75, configfile_name=None):
         self.show_output = show_output
         self.seplength = seplength
-        self._configfile_name = configfile_name
+        self.configfile_name = configfile_name
 
     @staticmethod
     def formatted_print(t):
-        print(u'{0:6}   {1:25}   {2:20}   {3:10}'.format(t[0][0:6], t[1][0:25], t[2][0:20], t[3][0:10]))
+        print(u'{0:6}   {1:25}   {2:20}   {3:10}'.format(
+            t[0][0:6], t[1][0:25], t[2][0:20], t[3][0:10]
+            )
+        )
 
     @staticmethod
     def newlines(num):
@@ -51,7 +55,8 @@ class IOManager(object):
         if value:
             self._configfile_name = value
         else:
-            self._configfile_name = os.path.expanduser("~") + "\\task_arena_config"
+            self._configfile_name = os.path.expanduser("~") \
+                                    + "\\task_arena_config"
 
     configfile_name = property(_get_configfile_name, _set_configfile_name)
 
@@ -87,13 +92,3 @@ class IOManager(object):
         te.save(f)
         self.send_message("Saved.")
         f.close()
-
-    def get_arena(self, args):
-        if args.arena:
-            arena = self.TaskEmperor.find(args.arena)
-            if arena:
-                return arena
-            else:
-                self.send_message("Arena " + args.arena + " not found.")
-        else:
-            self.send_message("You must supply an arena.")
