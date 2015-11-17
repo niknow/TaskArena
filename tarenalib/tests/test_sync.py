@@ -120,3 +120,35 @@ class TestSyncManager(unittest.TestCase):
         self.assertEqual(synclist[2].local_task, synclist[2].remote_task)
         self.assertEqual(synclist[2].local_task.tw_task['priority'],
                          synclist[2].remote_task.tw_task['priority'])
+
+
+class TestSyncElement(unittest.TestCase):
+
+    def test_create(self):
+        se = SyncElement()
+        self.assertEqual(type(se), SyncElement)
+
+    @patch('tasklib.task.Task', new=dict)
+    def test_local_description(self):
+        se = SyncElement()
+        self.assertEqual(se.local_description, '')
+        se.local_task = SharedTask(tlib.Task())
+        se.local_task.tw_task['description'] = 'foo'
+        self.assertEqual(se.local_description, 'foo')
+
+    @patch('tasklib.task.Task', new=dict)
+    def test_remote_description(self):
+        se = SyncElement()
+        self.assertEqual(se.remote_description, '')
+        se.remote_task = SharedTask(tlib.Task())
+        se.remote_task.tw_task['description'] = 'foo'
+        self.assertEqual(se.remote_description, 'foo')
+
+    @patch('tasklib.task.Task', new=dict)
+    def test_last_modified(self):
+        se = SyncElement()
+        self.assertEqual(se.local_last_modified, '')
+        se.local_task = SharedTask(tlib.Task())
+        se.local_task.last_modified = lambda : 'now'
+        self.assertEqual(se.local_last_modified, 'now')
+
