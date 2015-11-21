@@ -66,19 +66,22 @@ class SyncManager(object):
                 if elem.remote_task:
                     elem.remote_task.update(elem.local_task)
                 else:
-                    elem.remote_task = self.arena.tw_remote.add_task(elem.local_task)
+                    elem.remote_task = self.arena.tw_remote.add_task(
+                        elem.local_task)
                     elem.remote_task.ArenaTaskID = elem.local_task.ArenaTaskID
                 elem.remote_task.save()
             elif elem.action == 'DOWNLOAD':
                 if elem.local_task:
                     elem.local_task.update(elem.remote_task)
                 else:
-                    elem.local_task = self.arena.tw_local.add_task(elem.remote_task)
+                    elem.local_task = self.arena.tw_local.add_task(
+                        elem.remote_task)
                     elem.local_task.ArenaTaskID = elem.remote_task.ArenaTaskID
                 elem.local_task.save()
 
     def process_user_modified_synclist(self):
-        self.synclist = self.siom.user_checks_synclist(self.synclist, self.arena)
+        self.synclist = self.siom.user_checks_synclist(self.synclist,
+                                                       self.arena.name)
         if self.synclist:
             self.carry_out_sync()
             self.siom.iom.send_message("Sync complete.", 1, 1)
@@ -99,7 +102,8 @@ class SyncManager(object):
 
 
 class SyncElement(object):
-    def __init__(self, ltask=None, rtask=None, fields=None, suggestion='', action=''):
+    def __init__(self, ltask=None, rtask=None, fields=None, suggestion='',
+                 action=''):
         self.local_task = ltask
         self.remote_task = rtask
         self.suggestion = suggestion
@@ -112,7 +116,8 @@ class SyncElement(object):
 
     @property
     def remote_description(self):
-        return self.remote_task.tw_task['description'] if self.remote_task else ''
+        return self.remote_task.tw_task[
+            'description'] if self.remote_task else ''
 
     @property
     def local_last_modified(self):
@@ -138,7 +143,6 @@ class SyncElement(object):
 
 
 class SyncIOManager(object):
-
     def __init__(self, iom):
         self.iom = iom
 
@@ -152,7 +156,7 @@ class SyncIOManager(object):
                 e.local_description,
                 e.local_last_modified,
                 ''
-                ))
+            ))
             IOManager.formatted_print((
                 'Remote',
                 e.remote_description,
@@ -167,35 +171,67 @@ class SyncIOManager(object):
 
     def sync_choice(self, e):
         if e.local_task:
-            self.iom.send_message("Task Description: " + e.local_task.tw_task['description'])
-            self.iom.send_message("ArenaTaskID     : " + e.local_task.ArenaTaskID)
+            self.iom.send_message(
+                "Task Description: " + e.local_task.tw_task['description']
+            )
+            self.iom.send_message(
+                "ArenaTaskID     : " + e.local_task.ArenaTaskID
+            )
             if e.remote_task:
-                self.iom.send_message("Task exists in both repositories.", 1, 1)
-                self.iom.send_message("Last modified (local) : " + e.local_last_modified)
-                self.iom.send_message("Last modified (remote): " + e.remote_last_modified)
-                self.iom.send_message("Suggesting to " + e.suggestion + ".", 1, 1)
-                self.iom.send_message("This would cause the following modifications:", 0, 1)
+                self.iom.send_message(
+                    "Task exists in both repositories.", 1, 1
+                )
+                self.iom.send_message(
+                    "Last modified (local) : " + e.local_last_modified
+                )
+                self.iom.send_message(
+                    "Last modified (remote): " + e.remote_last_modified
+                )
+                self.iom.send_message(
+                    "Suggesting to " + e.suggestion + ".", 1, 1
+                )
+                self.iom.send_message(
+                    "This would cause the following modifications:", 0, 1
+                )
                 for field in e.fields:
-                    local_field = str(e.local_task.tw_task[field]) if e.local_task.tw_task[field] else '(empty)'
-                    remote_field = str(e.remote_task.tw_task[field]) if e.remote_task.tw_task[field] else '(empty)'
-                    self.iom.send_message(field + ": " + local_field + (
-                        " -> " if e.suggestion == 'UPLOAD' else ' <- ') + remote_field)
-                result = IOManager.get_input("Do you want to (u)pload, (d)ownload, (s)kip or (c)ancel sync? (u/d/s/c) ",
-                                             1)
+                    local_field = str(e.local_task.tw_task[field]) \
+                        if e.local_task.tw_task[field] else '(empty)'
+                    remote_field = str(e.remote_task.tw_task[field]) \
+                        if e.remote_task.tw_task[field] else '(empty)'
+                    self.iom.send_message(
+                        field + ": " + local_field +
+                        (" -> " if e.suggestion == 'UPLOAD' else ' <- ') +
+                        remote_field
+                    )
+                result = IOManager.get_input(
+                    "Do you want to (u)pload, (d)ownload, (s)kip or (c)ancel sync? (u/d/s/c) ",
+                    1)
             else:
-                self.iom.send_message("This task does not yet exist on remote. Suggestion: " + e.suggestion, 1)
-                result = IOManager.get_input("Do you want to (u)pload, (s)kip or (c)ancel sync? (u/s/c) ", 1)
-        else:
+                self.iom.send_message(
+                    "This task does not yet exist on remote. Suggestion: " + e.suggestion,
+                    1)
+                result = IOManager.get_input(
+                    "Do you want to (u)pload, (s)kip or (c)ancel sync? (u/s/c) ",
+                    1)
+        elif e.remote_task:
             self.iom.print_separator()
-            self.iom.send_message("Description: " + e.remote_task.tw_task['description'])
+            self.iom.send_message(
+                "Description: " + e.remote_task.tw_task['description'])
             self.iom.send_message("ArenaTaskID: " + e.remote_task.ArenaTaskID)
             self.iom.send_message("This task does not yet exist on local.", 1)
-            result = IOManager.get_input("Do you want to (d)ownload, (s)kip or (c)ancel sync? (d/s/c) ", 1)
+            result = IOManager.get_input(
+                "Do you want to (d)ownload, (s)kip or (c)ancel sync? (d/s/c) ",
+                1)
+        else:
+            result = None
         return result
 
-    def user_checks_synclist(self, synclist, arena):
+    def user_checks_synclist(self, synclist, arena_name):
         if synclist:
-            self.iom.send_message("Suggesting the following sync operations on " + arena.name + "...", 1, 2)
+            self.iom.send_message(
+                "Suggesting the following sync operations on " +
+                arena_name + "...",
+                1, 2)
             sync_command = self.sync_preview(synclist)
             if sync_command == 'a':
                 for elem in synclist:
@@ -220,4 +256,4 @@ class SyncIOManager(object):
                         break
             return synclist
         else:
-            self.iom.send_message("Arena " + arena.name + " is in sync.")
+            self.iom.send_message("Arena " + arena_name + " is in sync.")

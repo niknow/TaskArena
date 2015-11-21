@@ -177,3 +177,16 @@ class TestSyncIOManager(unittest.TestCase):
         synclist = [SyncElement()]
         self.assertEqual(siom.sync_preview(synclist), 'y')
 
+    @patch('builtins.input', side_effect=['y', 'y'])
+    @patch('tasklib.task.Task', new=dict)
+    def test_sync_choice(self, mock_input):
+        siom = SyncIOManager(self.iom)
+        e = SyncElement()
+        self.assertEqual(siom.sync_choice(e), None)
+
+    @patch.object(SyncIOManager, 'sync_preview', new=lambda a, b: 'a')
+    def test_user_checks_synclist(self):
+        siom = SyncIOManager(self.iom)
+        siom.user_checks_synclist(None, 'foo')
+        result = siom.user_checks_synclist([SyncElement(suggestion='UPLOAD')], 'foo')
+        self.assertEqual(result[0].action, 'UPLOAD')
