@@ -147,10 +147,23 @@ class SyncIOManager(object):
         IOManager.formatted_print(('', 'Task', 'LastModified', 'Suggestion'))
         self.iom.print_separator()
         for e in synclist:
-            IOManager.formatted_print(('Local', e.local_description, e.local_last_modified, ''))
-            IOManager.formatted_print(('Remote', e.remote_description, e.remote_last_modified, e.suggestion))
+            IOManager.formatted_print((
+                'Local',
+                e.local_description,
+                e.local_last_modified,
+                ''
+                ))
+            IOManager.formatted_print((
+                'Remote',
+                e.remote_description,
+                e.remote_last_modified,
+                e.suggestion
+            ))
             self.iom.print_separator()
-        return IOManager.get_input("Do you want to sync (a)ll, sync (m)anually or (c)ancel? (a/m/c) ", 1)
+        return IOManager.get_input(
+            "Do you want to sync (a)ll, sync (m)anually or (c)ancel? (a/m/c) ",
+            1
+        )
 
     def sync_choice(self, e):
         if e.local_task:

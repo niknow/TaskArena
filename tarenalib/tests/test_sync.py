@@ -22,9 +22,12 @@ import unittest
 from unittest.mock import patch
 import tasklib.task as tlib
 
-from tarenalib.sync import SyncElement, SyncManager
+from tarenalib.sync import SyncElement, SyncManager, SyncIOManager
 from tarenalib.arena import SharedTask, TaskArena
 from tarenalib.io import IOManager
+
+from io import StringIO
+import sys
 
 
 def last_modified_mock():
@@ -149,6 +152,28 @@ class TestSyncElement(unittest.TestCase):
         se = SyncElement()
         self.assertEqual(se.local_last_modified, '')
         se.local_task = SharedTask(tlib.Task())
-        se.local_task.last_modified = lambda : 'now'
+        se.local_task.last_modified = lambda: 'now'
         self.assertEqual(se.local_last_modified, 'now')
+
+
+class TestSyncIOManager(unittest.TestCase):
+
+    def setUp(self):
+        self.old_stdout = sys.stdout
+        self.mystdout = StringIO()
+        sys.stdout = self.mystdout
+        self.iom = IOManager(show_output=False)
+
+    def tearDown(self):
+        sys.stdout = self.old_stdout
+
+    def test_create(self):
+        siom = SyncIOManager(self.iom)
+
+    @patch('tarenalib.sync.SyncElement', new=dict)
+    @patch.object(IOManager, 'get_input', new=lambda a, b: 'y')
+    def test_sync_preview(self):
+        siom = SyncIOManager(self.iom)
+        synclist = [SyncElement()]
+        self.assertEqual(siom.sync_preview(synclist), 'y')
 
