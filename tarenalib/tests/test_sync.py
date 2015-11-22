@@ -178,12 +178,21 @@ class TestSyncIOManager(unittest.TestCase):
         synclist = [SyncElement()]
         self.assertEqual(siom.sync_preview(synclist), 'y')
 
-    @patch('builtins.input', side_effect=['y', 'y'])
-    @patch('tasklib.task.Task', new=dict)
-    def test_sync_choice(self, mock_input):
+    @patch('builtins.input', side_effect=['u', 'd', 's'])
+    @patch('tasklib.task.TaskWarrior')
+    def test_sync_choice(self, mock_input, mock_warrior):
         siom = SyncIOManager(self.iom)
         e = SyncElement()
         self.assertEqual(siom.sync_choice(e), None)
+        t = tlib.Task(tlib.TaskWarrior())
+        t['description'] = 'foo'
+        e = SyncElement(ltask=SharedTask(t))
+        self.assertEqual(siom.sync_choice(e), 'u')
+        e = SyncElement(rtask=SharedTask(t))
+        self.assertEqual(siom.sync_choice(e), 'd')
+        e = SyncElement(ltask=SharedTask(t), rtask=SharedTask(t))
+        e.fields = ['description']
+        self.assertEqual(siom.sync_choice(e), 's')
 
     @patch.object(SyncIOManager, 'sync_preview', new=lambda a, b: 'a')
     def test_user_checks_synclist(self):
