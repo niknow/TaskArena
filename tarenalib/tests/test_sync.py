@@ -166,6 +166,7 @@ class TestSyncIOManager(unittest.TestCase):
 
     def tearDown(self):
         sys.stdout = self.old_stdout
+        pass
 
     def test_create(self):
         siom = SyncIOManager(self.iom)
@@ -194,9 +195,24 @@ class TestSyncIOManager(unittest.TestCase):
         e.fields = ['description']
         self.assertEqual(siom.sync_choice(e), 's')
 
-    @patch.object(SyncIOManager, 'sync_preview', new=lambda a, b: 'a')
-    def test_user_checks_synclist(self):
+    @patch('tasklib.task.TaskWarrior')
+    @patch('builtins.input', side_effect=['a', 'm', 'u', 'd', 's', 'm', 'c'])
+    def test_user_checks_synclist(self, mock_input, mock_warrior):
         siom = SyncIOManager(self.iom)
-        siom.user_checks_synclist(None, 'foo')
-        result = siom.user_checks_synclist([SyncElement(suggestion='UPLOAD')], 'foo')
+        self.assertEqual(siom.user_checks_synclist(None, 'foo'), None)
+        sync_list = [SyncElement(suggestion='UPLOAD')]
+        result = siom.user_checks_synclist(sync_list, 'foo')    # input=a
         self.assertEqual(result[0].action, 'UPLOAD')
+        t = tlib.Task(tlib.TaskWarrior())
+        t['description'] = 'foo'
+        e1 = SyncElement(ltask=SharedTask(t), suggestion='UPLOAD')
+        e2 = SyncElement(rtask=SharedTask(t), suggestion='DOWNLOAD')
+        e3 = SyncElement(ltask=SharedTask(t), suggestion='UPLOAD')
+        sync_list = [e1, e2, e3]
+        result = siom.user_checks_synclist(sync_list, 'foo') # input=m u d s
+        self.assertEqual(result[0].action, 'UPLOAD')
+        self.assertEqual(result[1].action, 'DOWNLOAD')
+        self.assertEqual(result[2].action, 'SKIP')
+        sync_list = [SyncElement(ltask=SharedTask(t), suggestion='UPLOAD')]
+        result = siom.user_checks_synclist(sync_list, 'foo') # input = m c
+        self.assertEqual(result, [])
