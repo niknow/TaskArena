@@ -169,6 +169,7 @@ class TestSyncIOManager(unittest.TestCase):
 
     def test_create(self):
         siom = SyncIOManager(self.iom)
+        self.assertEqual(type(siom), SyncIOManager)
 
     @patch('tarenalib.sync.SyncElement', new=dict)
     @patch.object(IOManager, 'get_input', new=lambda a, b: 'y')
