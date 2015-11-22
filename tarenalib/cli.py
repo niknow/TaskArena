@@ -136,7 +136,8 @@ def remove(found_arena, pattern):
 @click.argument('pattern', nargs=-1)
 def local(found_arena, pattern):
     if found_arena:
-        list_tasks(found_arena.arena, pattern, found_arena.arena.local_data)
+        for task in found_arena.arena.get_local_tasks(list(pattern)):
+            iom.send_message(task.tw_task['description'])
 
 
 @cli.command(help='Lists all remote tasks matching PATTERN from ARENA.')
@@ -144,18 +145,8 @@ def local(found_arena, pattern):
 @click.argument('pattern', nargs=-1)
 def remote(found_arena, pattern):
     if found_arena:
-        list_tasks(found_arena.arena, pattern, found_arena.arena.remote_data)
-
-
-def list_tasks(arena, pattern, data_location):
-    p = subprocess.Popen(
-        ['task',
-         'rc.data.location:' + data_location,
-         'Arena:' + arena.name,
-         pattern],
-        stderr=subprocess.PIPE
-    )
-    p.communicate()
+        for task in found_arena.arena.get_remote_tasks(list(pattern)):
+            iom.send_message(task.tw_task['description'])
 
 
 @cli.command(help='Synchronizes ARENA')

@@ -223,11 +223,11 @@ class TaskArena(object):
     def __str__(self):
         return str(self.__repr__())
 
-    def get_local_tasks(self):
-        return self.tw_local.tasks(['Arena:' + self.name])
+    def get_local_tasks(self, pattern=[]):
+        return self.tw_local.tasks(['Arena:' + self.name] + pattern)
 
-    def get_remote_tasks(self):
-        return self.tw_remote.tasks(['Arena:' + self.name])
+    def get_remote_tasks(self, pattern=[]):
+        return self.tw_remote.tasks(['Arena:' + self.name] + pattern)
 
 
 class TaskEmperor(object):

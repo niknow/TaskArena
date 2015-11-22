@@ -64,6 +64,8 @@ class TestTArena(unittest.TestCase):
             result_check = self.runner.invoke(cli, cmd + ['arenas'])
             assert result_delete.exit_code == 0
             assert 'No arenas found' in result_check.output
+            result_not_found = self.runner.invoke(cli, cmd + ['delete', 'foo'])
+            assert 'not found' in result_not_found.output
 
     def test_arenas(self):
         with self.runner.isolated_filesystem():
@@ -102,6 +104,37 @@ class TestTArena(unittest.TestCase):
             for uda in uda_config_list:
                 tw.config.update({uda[0]: uda[1]})
             assert len(tw.tasks.filter('Arena:foo')) == 0
+
+    def test_local(self):
+        with self.runner.isolated_filesystem():
+            dloc = os.getcwd() + '/local'
+            tw = TaskWarrior(dloc)
+            t = Task(tw)
+            description = 'do dishes'
+            t['description'] = description
+            t.save()
+            self.runner.invoke(cli, cmd_dummy_arena)
+            self.runner.invoke(cli, cmd + ['add', 'foo', description])
+            for uda in uda_config_list:
+                tw.config.update({uda[0]: uda[1]})
+            result = self.runner.invoke(cli, cmd + ['local', 'foo', 'dishes'])
+            assert 'dishes' in result.output
+
+    def test_remote(self):
+        with self.runner.isolated_filesystem():
+            self.runner.invoke(cli, cmd_dummy_arena)
+            dloc = os.getcwd() + '/remote'
+            tw = TaskWarrior(dloc)
+            for uda in uda_config_list:
+                tw.config.update({uda[0]: uda[1]})
+            t = Task(tw)
+            description = 'do dishes'
+            t['description'] = description
+            t['Arena'] = 'foo'
+            t['ArenaTaskID'] = '1'
+            t.save()
+            result = self.runner.invoke(cli, cmd + ['remote', 'foo', 'dishes'])
+            assert 'dishes' in result.output
 
     def test_sync(self):
         with self.runner.isolated_filesystem():
