@@ -41,17 +41,21 @@ class TestTArena(unittest.TestCase):
     def test_install(self):
         with self.runner.isolated_filesystem():
             result = self.runner.invoke(cli, ['install'])
-        assert result.exit_code == 0
+        assert 'successful' in result.output
 
     def test_uninstall(self):
         with self.runner.isolated_filesystem():
             result = self.runner.invoke(cli, ['uninstall'])
-        assert result.exit_code == 0
+        assert 'successful' in result.output
 
     def test_create(self):
         with self.runner.isolated_filesystem():
             result = self.runner.invoke(cli, cmd_dummy_arena)
-        assert result.exit_code == 0
+        assert 'created' in result.output
+        with self.runner.isolated_filesystem():
+            self.runner.invoke(cli, cmd_dummy_arena)
+            result = self.runner.invoke(cli, cmd_dummy_arena)
+        assert 'exists' in result.output
 
     def test_delete(self):
         with self.runner.isolated_filesystem():
