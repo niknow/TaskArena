@@ -55,8 +55,9 @@ class IOManager(object):
         if value:
             self._configfile_name = value
         else:
-            self._configfile_name = os.path.expanduser("~") \
-                                    + "\\task_arena_config"
+            self._configfile_name = os.path.join(
+                os.path.expanduser("~"),
+                "task_arena_config")
 
     configfile_name = property(_get_configfile_name, _set_configfile_name)
 

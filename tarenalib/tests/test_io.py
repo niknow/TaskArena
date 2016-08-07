@@ -77,7 +77,7 @@ class TestIOManager(unittest.TestCase):
         runner = CliRunner()
         sys.stdout = self.old_stdout
         with runner.isolated_filesystem():
-            config_file_name = os.getcwd()+'/config_file'
+            config_file_name = os.path.join(os.getcwd(), 'config_file')
             self.assertEqual(os.path.isfile(config_file_name), False)
             iom = IOManager(False, 75, config_file_name)
             iom.get_task_emperor()

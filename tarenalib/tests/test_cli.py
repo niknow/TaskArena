@@ -78,7 +78,7 @@ class TestTArena(unittest.TestCase):
 
     def test_add(self):
         with self.runner.isolated_filesystem():
-            dloc = os.getcwd() + '/local'
+            dloc = os.path.join(os.getcwd(), 'local')
             tw = TaskWarrior(dloc)
             t = Task(tw)
             description = 'do dishes'
@@ -92,7 +92,7 @@ class TestTArena(unittest.TestCase):
 
     def test_remove(self):
         with self.runner.isolated_filesystem():
-            dloc = os.getcwd() + '/local'
+            dloc = os.path.join(os.getcwd(), 'local')
             tw = TaskWarrior(dloc)
             t = Task(tw)
             description = 'do dishes'
@@ -107,7 +107,7 @@ class TestTArena(unittest.TestCase):
 
     def test_local(self):
         with self.runner.isolated_filesystem():
-            dloc = os.getcwd() + '/local'
+            dloc = os.path.join(os.getcwd(), 'local')
             tw = TaskWarrior(dloc)
             t = Task(tw)
             description = 'do dishes'
@@ -123,7 +123,7 @@ class TestTArena(unittest.TestCase):
     def test_remote(self):
         with self.runner.isolated_filesystem():
             self.runner.invoke(cli, cmd_dummy_arena)
-            dloc = os.getcwd() + '/remote'
+            dloc = os.path.join(os.getcwd(), 'remote')
             tw = TaskWarrior(dloc)
             for uda in uda_config_list:
                 tw.config.update({uda[0]: uda[1]})
@@ -138,9 +138,8 @@ class TestTArena(unittest.TestCase):
 
     def test_sync(self):
         with self.runner.isolated_filesystem():
-            cwd = os.getcwd()
-            dloc = cwd + '/local'
-            dremote = cwd + '/remote'
+            dloc = os.path.join(os.getcwd(), 'local')
+            dremote = os.path.join(os.getcwd(), 'remote')
             tw_local = TaskWarrior(dloc)
             tw_remote = TaskWarrior(dremote)
             t = Task(tw_local)
